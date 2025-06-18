@@ -1,1 +1,21 @@
-
+{
+    "name": "Planjob - ตารางงาน",
+    "short_name": "Planjob",
+    "description": "เว็บแอปพลิเคชันสำหรับจัดการตารางงานส่วนตัว",
+    "start_url": ".",
+    "display": "standalone",
+    "background_color": "#f4f4f9",
+    "theme_color": "#4CAF50",
+    "icons": [
+        {
+            "src": "icons/icon-192x192.png",
+            "sizes": "192x192",
+            "type": "image/png"
+        },
+        {
+            "src": "icons/icon-512x512.png",
+            "sizes": "512x512",
+            "type": "image/png"
+        }
+    ]
+}
