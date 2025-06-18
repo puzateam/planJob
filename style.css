@@ -22,15 +22,12 @@ header #user-filter-section {
 }
 
 .header-icon {
-    /* ** FIX **: Changed from px to em for responsive scaling */
     width: 1.5em;
     height: 1.5em;
     border-radius: 4px;
-    /* Added for better vertical alignment with text */
     vertical-align: middle;
-    margin-bottom: 0.2em; /* Fine-tune vertical position */
+    margin-bottom: 0.2em;
 }
-
 
 /* Status Bar */
 #status-bar {
@@ -40,22 +37,41 @@ header #user-filter-section {
 /* Task Card Styles */
 .task-card .card-body {
     position: relative;
-    padding-right: 55px; /* Make space for action buttons */
+    padding-right: 55px;
 }
 .task-card {
-    border-left: 5px solid var(--bs-primary);
+    border-left: 5px solid var(--bs-primary); /* Default color for future tasks */
+    transition: all 0.2s ease-in-out;
 }
 .task-actions {
     position: absolute;
     top: 0.5rem;
     right: 0.5rem;
     display: flex;
-    flex-direction: column; /* Stack buttons vertically */
-    gap: 0.3rem; /* Add space between buttons */
+    flex-direction: column;
+    gap: 0.3rem;
 }
 .task-actions .btn {
-    padding: 0.1rem 0.4rem; /* Make buttons a bit smaller */
+    padding: 0.1rem 0.4rem;
     font-size: 0.8rem;
+}
+
+/* ** NEW **: Card Status Colors */
+.task-card-today {
+    border-left-color: #198754; /* Bootstrap Success Green */
+    background-color: #e8f5e9; /* Light green background */
+}
+.task-card-warning {
+    border-left-color: #ffc107; /* Bootstrap Warning Yellow */
+    background-color: #fff8e1; /* Light yellow background */
+}
+.task-card-overdue {
+    border-left-color: #6c757d; /* Bootstrap Secondary Gray */
+    background-color: #f8f9fa; /* Light gray background */
+}
+.task-card-overdue strong, .task-card-overdue span {
+    color: #6c757d;
+    text-decoration: line-through; /* ขีดฆ่าข้อความที่เลยกำหนด */
 }
 
 /* FAB Style */
