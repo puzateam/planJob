@@ -4,8 +4,6 @@ const API_URL = 'https://script.google.com/macros/s/AKfycbx1K5nqqUOiXBkn_fJpl0em
 const AppState = { currentUser: null, currentRole: null, isLoggedIn: false, allUsers: [] };
 // DOM Elements
 const userFilterDropdown = document.getElementById('user-filter-dropdown');
-const monthFilterDropdown = document.getElementById('month-filter');
-const yearFilterDropdown = document.getElementById('year-filter');
 const loggedInControls = document.getElementById('logged-in-controls');
 const loginBtn = document.getElementById('login-btn');
 const manageUsersBtn = document.getElementById('manage-users-btn');
@@ -22,8 +20,10 @@ const manageUsersModal = new bootstrap.Modal(document.getElementById('manage-use
 
 // Event Listeners
 document.addEventListener('DOMContentLoaded', initializeApp);
-[userFilterDropdown, monthFilterDropdown, yearFilterDropdown].forEach(el => {
-    el.addEventListener('change', () => triggerFetchTasks());
+userFilterDropdown.addEventListener('change', (e) => {
+    if (e.target.value) {
+        fetchTasks(e.target.value);
+    }
 });
 loginBtn.addEventListener('click', handleLogin);
 logoutBtn.addEventListener('click', handleLogout);
@@ -43,13 +43,12 @@ async function initializeApp() {
     showLoader('กำลังเริ่มต้นระบบ...');
     checkLoginState();
     populateTimeDropdown();
-    populateDateFilters();
     await fetchAndPopulateUsers();
-    taskList.innerHTML = '<p class="text-center text-muted mt-5">กรุณาเลือกผู้ใช้, เดือน, และปี เพื่อดูตารางงาน</p>';
+    taskList.innerHTML = '<p class="text-center text-muted mt-5">กรุณาเลือกผู้ใช้จากเมนูด้านบนเพื่อดูตารางงาน</p>';
     if (AppState.isLoggedIn) {
         const initialUser = AppState.currentRole === 'admin' ? 'all' : AppState.currentUser;
         userFilterDropdown.value = initialUser;
-        if(userFilterDropdown.value) await triggerFetchTasks();
+        if(userFilterDropdown.value) await fetchTasks(initialUser);
     }
     updateUI();
     Swal.close();
@@ -64,36 +63,10 @@ function populateTimeDropdown() {
     }
 }
 
-function populateDateFilters() {
-    const now = new Date();
-    const currentYear = now.getFullYear();
-    const currentMonth = now.getMonth() + 1;
-    const thaiMonths = ["มกราคม", "กุมภาพันธ์", "มีนาคม", "เมษายน", "พฤษภาคม", "มิถุนายน", "กรกฎาคม", "สิงหาคม", "กันยายน", "ตุลาคม", "พฤศจิกายน", "ธันวาคม"];
-    
-    monthFilterDropdown.innerHTML = thaiMonths.map((month, i) => `<option value="${i + 1}">${month}</option>`).join('');
-    monthFilterDropdown.value = currentMonth;
-
-    yearFilterDropdown.innerHTML = '';
-    for (let i = -2; i <= 2; i++) {
-        const year = currentYear + i;
-        yearFilterDropdown.innerHTML += `<option value="${year}">${year + 543}</option>`;
-    }
-    yearFilterDropdown.value = currentYear;
-}
-
-function triggerFetchTasks() {
-    const owner = userFilterDropdown.value;
-    const month = monthFilterDropdown.value;
-    const year = yearFilterDropdown.value;
-    if (owner && month && year) {
-        fetchTasks(owner, month, year);
-    }
-}
-
-async function fetchTasks(owner, month, year) {
-    if (!owner || !month || !year) return;
+async function fetchTasks(owner) {
+    if (!owner) return;
     showLoader('กำลังโหลดข้อมูลงาน...');
-    const response = await fetchAPI(`GET?owner=${owner}&month=${month}&year=${year}`);
+    const response = await fetchAPI(`GET?owner=${owner}`);
     Swal.close();
     renderTasks(response?.status === 'success' ? response.data : []);
 }
@@ -111,7 +84,7 @@ async function fetchAndPopulateUsers() {
     if (response?.status === 'success') {
         AppState.allUsers = response.data;
         const currentSelection = userFilterDropdown.value;
-        userFilterDropdown.innerHTML = '<option value="" selected disabled>--- ผู้ใช้ ---</option>';
+        userFilterDropdown.innerHTML = '<option value="" selected disabled>--- เลือกผู้ใช้ ---</option>';
         if (AppState.isLoggedIn && AppState.currentRole === 'admin') {
             userFilterDropdown.innerHTML += '<option value="all">ดูทั้งหมด</option>';
         }
@@ -126,7 +99,7 @@ async function fetchAndPopulateUsers() {
 
 function renderTasks(tasks) {
     if (tasks.length === 0) {
-        taskList.innerHTML = '<p class="text-center text-muted mt-5">ไม่พบข้อมูลงานในเดือนที่เลือก</p>';
+        taskList.innerHTML = '<p class="text-center text-muted mt-5">ไม่พบข้อมูลงาน</p>';
         return;
     }
     taskList.innerHTML = tasks.map(task => {
@@ -190,11 +163,11 @@ async function handleLogin() {
             localStorage.setItem('taskAppUser', response.username);
             localStorage.setItem('taskAppRole', response.role);
             checkLoginState();
-            await fetchAndPopulateUsers(); // Re-populate to add "All" option for admin
+            await fetchAndPopulateUsers();
             updateUI();
             const initialUser = response.role === 'admin' ? 'all' : response.username;
             userFilterDropdown.value = initialUser;
-            triggerFetchTasks();
+            if(userFilterDropdown.value) fetchTasks(initialUser);
         } else {
             showError(response?.message || 'ชื่อผู้ใช้หรือรหัสผ่านไม่ถูกต้อง');
         }
@@ -222,7 +195,7 @@ async function handleSaveTask(event) {
     if (response?.status === 'success') {
         taskModal.hide();
         showSuccess('บันทึกสำเร็จ!');
-        triggerFetchTasks();
+        fetchTasks(userFilterDropdown.value);
     } else {
         showError(response?.message || 'เกิดข้อผิดพลาด');
     }
@@ -243,7 +216,7 @@ async function handleDeleteTask(taskId) {
         Swal.close();
         if (response?.status === 'success') {
             showSuccess('ลบข้อมูลสำเร็จ');
-            triggerFetchTasks();
+            fetchTasks(userFilterDropdown.value);
         } else {
             showError(response?.message || 'เกิดข้อผิดพลาด');
         }
