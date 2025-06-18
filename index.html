@@ -21,19 +21,19 @@
 <body>
 
     <div id="app-container">
-        <header class="bg-primary text-white shadow-sm p-3 d-flex justify-content-between align-items-center flex-wrap sticky-top">
+        <header class="bg-primary text-white shadow-sm p-3 d-flex justify-content-between align-items-center sticky-top">
             <!-- Left Side: App Title -->
-            <h1 class="h5 mb-0 me-auto">Planjob</h1>
+            <h1 class="h5 mb-0">ตารางงาน</h1>
             
-            <!-- Center: Filters -->
+            <!-- Center: User Filter Dropdown -->
             <div id="user-filter-section">
                 <select id="user-filter-dropdown" class="form-select form-select-sm">
-                    <option value="" selected disabled>--- ผู้ใช้ ---</option>
+                    <option value="" selected disabled>--- เลือกผู้ใช้ ---</option>
                 </select>
             </div>
-       
+            
             <!-- Right Side: User Controls -->
-            <div class="d-flex align-items-center ms-auto">
+            <div class="d-flex align-items-center">
                 <!-- Logged In State -->
                 <div id="logged-in-controls" class="d-none align-items-center">
                     <button id="manage-users-btn" class="btn btn-outline-light btn-sm me-2 d-none" title="จัดการผู้ใช้"><i class="bi bi-people"></i></button>
