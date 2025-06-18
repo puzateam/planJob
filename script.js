@@ -2,19 +2,20 @@
 const API_URL = 'https://script.google.com/macros/s/AKfycbx1K5nqqUOiXBkn_fJpl0emv7810veZJB0fvISaMJAq7xDoWKrrw_aqQFwGaaUBse0L6w/exec'; 
 
 // DOM Elements
-const loader = document.getElementById('loader');
 const loginContainer = document.getElementById('login-container');
 const appContainer = document.getElementById('app-container');
 const loginForm = document.getElementById('login-form');
-const loginError = document.getElementById('login-error');
 const userDisplay = document.getElementById('user-display');
 const logoutBtn = document.getElementById('logout-btn');
 const taskList = document.getElementById('task-list');
 const addTaskBtn = document.getElementById('add-task-btn');
-const taskModal = document.getElementById('task-modal');
 const taskForm = document.getElementById('task-form');
-const closeModalBtn = document.querySelector('.close-btn');
 const taskDateInput = document.getElementById('task-date');
+
+// Bootstrap Modal Instance
+const taskModalEl = document.getElementById('task-modal');
+const taskModal = new bootstrap.Modal(taskModalEl);
+
 
 // --- Event Listeners ---
 document.addEventListener('DOMContentLoaded', checkLoginState);
@@ -22,108 +23,125 @@ loginForm.addEventListener('submit', handleLogin);
 logoutBtn.addEventListener('click', handleLogout);
 addTaskBtn.addEventListener('click', () => {
     taskForm.reset();
-    // ตั้งค่าวันที่ในฟอร์มเป็นวันปัจจุบันอัตโนมัติ
+    document.getElementById('modal-title').textContent = 'เพิ่มงานใหม่';
     taskDateInput.value = new Date().toISOString().split('T')[0];
-    taskModal.style.display = 'block';
-});
-closeModalBtn.addEventListener('click', () => taskModal.style.display = 'none');
-window.addEventListener('click', (event) => {
-    if (event.target == taskModal) {
-        taskModal.style.display = 'none';
-    }
+    taskModal.show();
 });
 taskForm.addEventListener('submit', handleAddTask);
 
 
 // --- Core Functions ---
 
-function showLoader(show) {
-    loader.style.display = show ? 'flex' : 'none';
+function showLoader(title = 'กำลังโหลด...') {
+    Swal.fire({
+        title: title,
+        allowOutsideClick: false,
+        didOpen: () => {
+            Swal.showLoading();
+        }
+    });
 }
 
 function checkLoginState() {
     const username = localStorage.getItem('taskAppUser');
     if (username) {
         userDisplay.textContent = username;
-        loginContainer.style.display = 'none';
-        appContainer.style.display = 'block';
+        loginContainer.classList.add('d-none');
+        appContainer.classList.remove('d-none');
         fetchTasks();
     } else {
-        loginContainer.style.display = 'flex';
-        appContainer.style.display = 'none';
+        loginContainer.classList.remove('d-none');
+        appContainer.classList.add('d-none');
     }
 }
 
 async function handleLogin(event) {
     event.preventDefault();
-    showLoader(true);
-    loginError.textContent = '';
+    showLoader('กำลังเข้าสู่ระบบ...');
     
     const username = loginForm.username.value;
     const password = loginForm.password.value;
 
     const response = await fetchAPI('POST', { action: 'login', username, password });
+    Swal.close();
 
-    showLoader(false);
     if (response && response.status === 'success') {
         localStorage.setItem('taskAppUser', response.username);
         checkLoginState();
     } else {
-        loginError.textContent = response.message || 'เกิดข้อผิดพลาดในการล็อกอิน';
+        Swal.fire({
+            icon: 'error',
+            title: 'ผิดพลาด!',
+            text: response.message || 'ชื่อผู้ใช้หรือรหัสผ่านไม่ถูกต้อง',
+        });
     }
 }
 
 function handleLogout() {
-    localStorage.removeItem('taskAppUser');
-    window.location.reload();
+    Swal.fire({
+        title: 'ต้องการออกจากระบบ?',
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonColor: '#3085d6',
+        cancelButtonColor: '#d33',
+        confirmButtonText: 'ใช่, ออกจากระบบ',
+        cancelButtonText: 'ยกเลิก'
+    }).then((result) => {
+        if (result.isConfirmed) {
+            localStorage.removeItem('taskAppUser');
+            window.location.reload();
+        }
+    });
 }
 
 async function fetchTasks() {
-    showLoader(true);
+    showLoader('กำลังโหลดข้อมูลงาน...');
     const owner = localStorage.getItem('taskAppUser');
     const response = await fetchAPI(`GET?owner=${owner}`);
+    Swal.close();
 
-    showLoader(false);
     if (response && response.status === 'success') {
         renderTasks(response.data);
     } else {
-        taskList.innerHTML = `<p class="error-message">ไม่สามารถโหลดข้อมูลได้: ${response.message}</p>`;
+        Swal.fire({
+            icon: 'error',
+            title: 'ไม่สามารถโหลดข้อมูล',
+            text: response.message
+        });
     }
 }
 
 function renderTasks(tasks) {
     taskList.innerHTML = '';
     if (tasks.length === 0) {
-        taskList.innerHTML = '<p>ยังไม่มีงานในรายการของคุณ</p>';
+        taskList.innerHTML = '<p class="text-center text-muted mt-5">ยังไม่มีงานในรายการของคุณ</p>';
         return;
     }
-
-    // เรียงข้อมูลตามวันที่อีกครั้งเผื่อ API ไม่ได้เรียงมา
-    tasks.sort((a, b) => new Date(a.date) - new Date(b.date));
-
     tasks.forEach(task => {
-        const taskItem = document.createElement('div');
-        taskItem.className = 'task-item';
-        
         const [thaiDate, thaiYear] = formatThaiDate(task.date);
-
-        taskItem.innerHTML = `
-            <div class="task-item-col1">
-                <strong>${thaiDate} ${thaiYear}</strong>
-                <span>${task.time} น.</span>
-            </div>
-            <div class="task-item-col2">
-                <strong>${task.taskName}</strong>
-                <span>${task.location}</span>
+        const card = document.createElement('div');
+        card.className = 'card task-card mb-3';
+        card.innerHTML = `
+            <div class="card-body">
+                <div class="d-flex justify-content-between">
+                    <div class="pe-3">
+                        <strong class="d-block">${thaiDate} ${thaiYear}</strong>
+                        <span class="text-muted">${task.time} น.</span>
+                    </div>
+                    <div class="text-end">
+                        <strong class="d-block">${task.taskName}</strong>
+                        <span class="text-muted">${task.location}</span>
+                    </div>
+                </div>
             </div>
         `;
-        taskList.appendChild(taskItem);
+        taskList.appendChild(card);
     });
 }
 
 async function handleAddTask(event) {
     event.preventDefault();
-    showLoader(true);
+    showLoader('กำลังบันทึกข้อมูล...');
 
     const taskData = {
         action: 'addTask',
@@ -135,60 +153,50 @@ async function handleAddTask(event) {
     };
     
     const response = await fetchAPI('POST', taskData);
-    
-    showLoader(false);
+    Swal.close();
+
     if (response && response.status === 'success') {
-        taskModal.style.display = 'none';
+        taskModal.hide();
+        Swal.fire({
+            icon: 'success',
+            title: 'บันทึกสำเร็จ!',
+            showConfirmButton: false,
+            timer: 1500
+        });
         fetchTasks(); // โหลดข้อมูลใหม่
     } else {
-        alert('เกิดข้อผิดพลาดในการเพิ่มข้อมูล: ' + response.message);
+        Swal.fire({
+            icon: 'error',
+            title: 'เกิดข้อผิดพลาด',
+            text: response.message,
+        });
     }
 }
 
 // --- Helper Functions ---
-
 async function fetchAPI(method, body = null) {
     try {
         let url = API_URL;
-        const options = {
-            method: 'POST', // GAS Web App มักใช้ POST สำหรับทุกอย่าง ยกเว้น GET พื้นฐาน
-            redirect: 'follow',
-            muteHttpExceptions: true,
-            headers: {
-                'Content-Type': 'text/plain;charset=utf-8', // ใช้ text/plain เพื่อหลีกเลี่ยง preflight CORS
-            },
-        };
-
+        const options = { method: 'POST', redirect: 'follow', muteHttpExceptions: true, headers: {'Content-Type': 'text/plain;charset=utf-8'}};
         if (method.startsWith('GET')) {
-            // สำหรับ doGet เราจะส่ง parameter ผ่าน URL
-             url += method.substring(3); // เอา ?... มาต่อท้าย
-             delete options.body;
-             // Google Script doGet ต้องใช้วิธีเรียกโดยตรง ไม่ผ่าน POST
-             const res = await fetch(url);
-             return await res.json();
-
+            url += method.substring(3);
+            const res = await fetch(url);
+            return await res.json();
         } else if (method === 'POST') {
-             options.body = JSON.stringify(body);
+            options.body = JSON.stringify(body);
         }
-        
         const response = await fetch(url, options);
         return await response.json();
-
     } catch (error) {
         console.error('API Error:', error);
         return { status: 'error', message: 'ไม่สามารถเชื่อมต่อกับเซิร์ฟเวอร์ได้' };
     }
 }
 
-
 function formatThaiDate(dateString) {
     const date = new Date(dateString);
     const thaiYear = date.getFullYear() + 543;
-    const options = {
-        day: 'numeric',
-        month: 'short',
-    };
-    // ใช้ Locale 'th-TH' เพื่อให้ได้ชื่อเดือนภาษาไทย
+    const options = { day: 'numeric', month: 'short' };
     const formattedDate = date.toLocaleDateString('th-TH', options);
     return [formattedDate, thaiYear];
 }
