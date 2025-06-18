@@ -33,17 +33,28 @@
             </div>
             
             <!-- Right Side: User Controls -->
-            <div class="d-flex align-items-center">
-                <!-- Logged In State -->
-                <div id="logged-in-controls" class="d-none align-items-center">
-                    <button id="manage-users-btn" class="btn btn-outline-light btn-sm me-2 d-none" title="จัดการผู้ใช้"><i class="bi bi-people"></i></button>
-                    <span id="user-display" class="me-2 text-nowrap"></span>
-                    <button id="logout-btn" class="btn btn-danger btn-sm" title="ออกจากระบบ"><i class="bi bi-box-arrow-right"></i></button>
-                </div>
+            <div id="header-controls">
                 <!-- Logged Out State -->
                 <button id="login-btn" class="btn btn-light btn-sm">เข้าสู่ระบบ</button>
+                
+                <!-- Logged In State -->
+                <div id="logged-in-controls" class="btn-group-vertical btn-group-sm d-none">
+                    <button id="manage-users-btn" class="btn btn-outline-light d-none">
+                        <i class="bi bi-people"></i> จัดการผู้ใช้
+                    </button>
+                    <button id="logout-btn" class="btn btn-outline-danger">
+                        <i class="bi bi-box-arrow-right"></i> ออกจากระบบ
+                    </button>
+                </div>
             </div>
         </header>
+        
+        <!-- ** NEW ** User Status Bar (Only for logged-in state) -->
+        <div id="status-bar" class="container-fluid bg-light py-2 d-none">
+            <div class="container text-center">
+                <span id="status-bar-text" class="fw-bold text-muted"></span>
+            </div>
+        </div>
 
         <main id="task-list" class="container mt-3 pb-5"></main>
         
@@ -53,69 +64,11 @@
     </div>
 
     <!-- Modals -->
-    <!-- Add/Edit Task Modal -->
     <div class="modal fade" id="task-modal" tabindex="-1" aria-labelledby="task-modal-title-label" aria-hidden="true">
-        <div class="modal-dialog modal-dialog-centered">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h5 class="modal-title" id="task-modal-title-label">เพิ่มงานใหม่</h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-                </div>
-                <div class="modal-body">
-                    <form id="task-form">
-                        <div class="mb-3">
-                            <label for="task-date" class="form-label">วันที่:</label>
-                            <input type="date" class="form-control" id="task-date" required>
-                        </div>
-                        <div class="mb-3">
-                            <label for="task-time" class="form-label">เวลา:</label>
-                            <select class="form-select" id="task-time" required></select>
-                        </div>
-                        <div class="mb-3">
-                            <label for="task-name" class="form-label">งานที่ต้องทำ:</label>
-                            <input type="text" class="form-control" id="task-name" placeholder="เช่น ประชุมทีม" required>
-                        </div>
-                        <div class="mb-3">
-                            <label for="task-location" class="form-label">สถานที่:</label>
-                            <input type="text" class="form-control" id="task-location" placeholder="เช่น ห้องประชุมใหญ่" required>
-                        </div>
-                    </form>
-                </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">ปิด</button>
-                    <button type="submit" form="task-form" class="btn btn-primary">บันทึก</button>
-                </div>
-            </div>
-        </div>
+        <div class="modal-dialog modal-dialog-centered"><div class="modal-content"><div class="modal-header"><h5 class="modal-title" id="task-modal-title-label">เพิ่มงานใหม่</h5><button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button></div><div class="modal-body"><form id="task-form"><div class="mb-3"><label for="task-date" class="form-label">วันที่:</label><input type="date" class="form-control" id="task-date" required></div><div class="mb-3"><label for="task-time" class="form-label">เวลา:</label><select class="form-select" id="task-time" required></select></div><div class="mb-3"><label for="task-name" class="form-label">งานที่ต้องทำ:</label><input type="text" class="form-control" id="task-name" placeholder="เช่น ประชุมทีม" required></div><div class="mb-3"><label for="task-location" class="form-label">สถานที่:</label><input type="text" class="form-control" id="task-location" placeholder="เช่น ห้องประชุมใหญ่" required></div></form></div><div class="modal-footer"><button type="button" class="btn btn-secondary" data-bs-dismiss="modal">ปิด</button><button type="submit" form="task-form" class="btn btn-primary">บันทึก</button></div></div></div>
     </div>
-    
-    <!-- Manage Users Modal -->
     <div class="modal fade" id="manage-users-modal" tabindex="-1" aria-labelledby="manage-users-modal-label" aria-hidden="true">
-        <div class="modal-dialog modal-dialog-centered modal-lg">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h5 class="modal-title" id="manage-users-modal-label">จัดการผู้ใช้งาน</h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-                </div>
-                <div class="modal-body">
-                    <h6>เพิ่มผู้ใช้ใหม่</h6>
-                    <form id="add-user-form" class="row gx-3 gy-2 align-items-center mb-4">
-                        <div class="col-sm-3"><input type="text" class="form-control" id="new-username" placeholder="Username" required></div>
-                        <div class="col-sm-3"><input type="password" class="form-control" id="new-password" placeholder="Password" required></div>
-                        <div class="col-sm-3">
-                            <select class="form-select" id="new-role">
-                                <option value="general" selected>General</option>
-                                <option value="admin">Admin</option>
-                            </select>
-                        </div>
-                        <div class="col-sm-3"><button type="submit" class="btn btn-success w-100">เพิ่มผู้ใช้</button></div>
-                    </form>
-                    <hr>
-                    <h6>รายชื่อผู้ใช้ปัจจุบัน</h6>
-                    <div id="user-list-table-container"></div>
-                </div>
-            </div>
-        </div>
+        <div class="modal-dialog modal-dialog-centered modal-lg"><div class="modal-content"><div class="modal-header"><h5 class="modal-title" id="manage-users-modal-label">จัดการผู้ใช้งาน</h5><button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button></div><div class="modal-body"><h6>เพิ่มผู้ใช้ใหม่</h6><form id="add-user-form" class="row gx-3 gy-2 align-items-center mb-4"><div class="col-sm-3"><input type="text" class="form-control" id="new-username" placeholder="Username" required></div><div class="col-sm-3"><input type="password" class="form-control" id="new-password" placeholder="Password" required></div><div class="col-sm-3"><select class="form-select" id="new-role"><option value="general" selected>General</option><option value="admin">Admin</option></select></div><div class="col-sm-3"><button type="submit" class="btn btn-success w-100">เพิ่มผู้ใช้</button></div></form><hr><h6>รายชื่อผู้ใช้ปัจจุบัน</h6><div id="user-list-table-container"></div></div></div></div>
     </div>
 
     <!-- Scripts -->
