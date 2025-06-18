@@ -56,18 +56,18 @@ header #user-filter-section {
     font-size: 0.8rem;
 }
 
-/* ** NEW **: Card Status Colors */
+/* ** UPDATED **: Card Status Colors (Darker shades) */
 .task-card-today {
-    border-left-color: #198754; /* Bootstrap Success Green */
-    background-color: #e8f5e9; /* Light green background */
+    border-left-color: #146c43; /* Bootstrap Success Dark */
+    background-color: #d1e7dd; /* Bootstrap Success Lighter Background */
 }
 .task-card-warning {
-    border-left-color: #ffc107; /* Bootstrap Warning Yellow */
-    background-color: #fff8e1; /* Light yellow background */
+    border-left-color: #d39e00; /* Bootstrap Warning Dark */
+    background-color: #fff3cd; /* Bootstrap Warning Lighter Background */
 }
 .task-card-overdue {
-    border-left-color: #6c757d; /* Bootstrap Secondary Gray */
-    background-color: #f8f9fa; /* Light gray background */
+    border-left-color: #495057; /* Bootstrap Secondary Dark */
+    background-color: #e9ecef; /* Bootstrap Secondary Lighter Background */
 }
 .task-card-overdue strong, .task-card-overdue span {
     color: #6c757d;
