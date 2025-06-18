@@ -1,5 +1,5 @@
 // !!! สำคัญ: แก้ไข URL นี้เป็น Web App URL ของคุณ !!!
-const API_URL = 'YOUR_WEB_APP_URL_HERE';
+const API_URL = 'https://script.google.com/macros/s/AKfycbx1K5nqqUOiXBkn_fJpl0emv7810veZJB0fvISaMJAq7xDoWKrrw_aqQFwGaaUBse0L6w/exec';
 
 // --- State Management ---
 const AppState = {
