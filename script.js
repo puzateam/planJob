@@ -4,11 +4,11 @@ const API_URL = 'https://script.google.com/macros/s/AKfycbx1K5nqqUOiXBkn_fJpl0em
 const AppState = { currentUser: null, currentRole: null, isLoggedIn: false, allUsers: [], currentTasks: [], editingTaskId: null };
 // DOM Elements
 const userFilterDropdown = document.getElementById('user-filter-dropdown');
-const statusBar = document.getElementById('status-bar'); // ** NEW **
+const statusBar = document.getElementById('status-bar');
+const statusBarText = document.getElementById('status-bar-text');
 const loggedInControls = document.getElementById('logged-in-controls');
 const loginBtn = document.getElementById('login-btn');
 const manageUsersBtn = document.getElementById('manage-users-btn');
-const userDisplay = document.getElementById('user-display');
 const logoutBtn = document.getElementById('logout-btn');
 const taskList = document.getElementById('task-list');
 const fabFooter = document.getElementById('fab-footer');
@@ -138,6 +138,7 @@ function updateUI() {
     
     // Header controls
     loginBtn.classList.toggle('d-none', loggedIn);
+    loggedInControls.classList.toggle('d-none', !loggedIn);
     userFilterDropdown.parentElement.style.visibility = loggedIn ? 'hidden' : 'visible';
 
     // Status Bar and FAB
@@ -145,7 +146,7 @@ function updateUI() {
     fabFooter.classList.toggle('d-none', !loggedIn);
     
     if (loggedIn) {
-        userDisplay.textContent = `ผู้ใช้: ${AppState.currentUser}`;
+        statusBarText.textContent = `ตารางงานของ ${AppState.currentUser}`;
         manageUsersBtn.classList.toggle('d-none', AppState.currentRole !== 'admin');
     }
 }
