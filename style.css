@@ -1,39 +1,44 @@
-/* กำหนดตัวแปรสีและฟอนต์หลัก */
 :root {
-    --bs-primary: #4CAF50; /* สีเขียวหลัก */
+    --bs-primary: #4CAF50;
     --bs-primary-rgb: 76, 175, 80;
     --bs-body-font-family: 'Sarabun', sans-serif;
     --bs-body-bg: #f4f4f9;
 }
 
-/* ปรับปุ่ม Primary ให้ใช้สีที่เรากำหนด */
 .btn-primary {
     --bs-btn-bg: var(--bs-primary);
     --bs-btn-border-color: var(--bs-primary);
     --bs-btn-hover-bg: #388E3C;
     --bs-btn-hover-border-color: #388E3C;
-}
-.btn-outline-light:hover {
-    color: var(--bs-primary) !important;
-}
-
-/* สไตล์สำหรับกล่อง Login */
-.login-box {
-    width: 100%;
-    max-width: 400px;
-    border: none;
-}
-.login-box .card-title {
-    font-weight: 900;
-    color: var(--bs-primary);
+    --bs-btn-active-bg: #327a35;
+    --bs-btn-active-border-color: #327a35;
 }
 
-/* สไตล์สำหรับ Task Card */
+/* Header Styles */
+header #user-filter-section {
+    max-width: 200px;
+    flex-grow: 1;
+    margin: 0 1rem;
+}
+#logged-in-controls .btn {
+    padding: 0.25rem 0.5rem;
+}
+
+/* Task Card Styles */
+.task-card .card-body {
+    position: relative;
+    padding-right: 45px; /* Make space for action buttons */
+}
 .task-card {
     border-left: 5px solid var(--bs-primary);
 }
+.task-actions {
+    position: absolute;
+    top: 0.5rem;
+    right: 0.5rem;
+}
 
-/* สไตล์สำหรับ Floating Action Button (FAB) */
+/* Floating Action Button (FAB) Style */
 .fab {
     position: fixed;
     width: 60px;
@@ -41,5 +46,6 @@
     bottom: 20px;
     right: 20px;
     font-size: 2rem;
-    line-height: 1.5; /* จัด + ให้อยู่กลาง */
+    line-height: 1.5; /* Center the '+' vertically */
+    z-index: 1030; /* Ensure it's above other content */
 }
