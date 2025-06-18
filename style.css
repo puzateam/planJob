@@ -21,6 +21,12 @@ header #user-filter-section {
     margin: 0 1rem;
 }
 
+.header-icon {
+    width: 32px;
+    height: 32px;
+    border-radius: 4px;
+}
+
 /* Status Bar */
 #status-bar {
     border-bottom: 1px solid #dee2e6;
