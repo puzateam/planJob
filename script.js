@@ -1,7 +1,7 @@
 // !!! สำคัญ: แก้ไข URL นี้เป็น Web App URL ของคุณ !!!
-const API_URL = 'https://script.google.com/macros/s/AKfycbx1K5nqqUOiXBkn_fJpl0emv7810veZJB0fvISaMJAq7xDoWKrrw_aqQFwGaaUBse0L6w/exec';
+const API_URL = 'YOUR_WEB_APP_URL_HERE';
 
-const AppState = { currentUser: null, currentRole: null, isLoggedIn: false, allUsers: [] };
+const AppState = { currentUser: null, currentRole: null, isLoggedIn: false, allUsers: [], currentTasks: [], editingTaskId: null };
 // DOM Elements
 const userFilterDropdown = document.getElementById('user-filter-dropdown');
 const loggedInControls = document.getElementById('logged-in-controls');
@@ -14,6 +14,7 @@ const fabFooter = document.getElementById('fab-footer');
 const addTaskBtn = document.getElementById('add-task-btn');
 const taskForm = document.getElementById('task-form');
 const taskDateInput = document.getElementById('task-date');
+const taskModalTitle = document.getElementById('task-modal-title-label');
 // Modals
 const taskModal = new bootstrap.Modal(document.getElementById('task-modal'));
 const manageUsersModal = new bootstrap.Modal(document.getElementById('manage-users-modal'));
@@ -21,13 +22,13 @@ const manageUsersModal = new bootstrap.Modal(document.getElementById('manage-use
 // Event Listeners
 document.addEventListener('DOMContentLoaded', initializeApp);
 userFilterDropdown.addEventListener('change', (e) => {
-    if (e.target.value) {
-        fetchTasks(e.target.value);
-    }
+    if (e.target.value) { fetchTasks(e.target.value); }
 });
 loginBtn.addEventListener('click', handleLogin);
 logoutBtn.addEventListener('click', handleLogout);
 addTaskBtn.addEventListener('click', () => {
+    AppState.editingTaskId = null; // Ensure we are in "add" mode
+    taskModalTitle.textContent = 'เพิ่มงานใหม่';
     taskForm.reset();
     taskDateInput.value = new Date().toISOString().split('T')[0];
     taskModal.show();
@@ -46,7 +47,6 @@ async function initializeApp() {
     await fetchAndPopulateUsers();
     taskList.innerHTML = '<p class="text-center text-muted mt-5">กรุณาเลือกผู้ใช้จากเมนูด้านบนเพื่อดูตารางงาน</p>';
     if (AppState.isLoggedIn) {
-        // Logged in users see their own data by default.
         userFilterDropdown.value = AppState.currentUser;
         if(userFilterDropdown.value) await fetchTasks(AppState.currentUser);
     }
@@ -68,15 +68,14 @@ async function fetchTasks(owner) {
     showLoader('กำลังโหลดข้อมูลงาน...');
     const response = await fetchAPI(`GET?owner=${owner}`);
     Swal.close();
-    renderTasks(response?.status === 'success' ? response.data : []);
+    AppState.currentTasks = response?.status === 'success' ? response.data : [];
+    renderTasks(AppState.currentTasks);
 }
 
 function checkLoginState() {
     const user = localStorage.getItem('taskAppUser');
     const role = localStorage.getItem('taskAppRole');
-    if (user && role) {
-        Object.assign(AppState, { currentUser: user, currentRole: role, isLoggedIn: true });
-    }
+    if (user && role) { Object.assign(AppState, { currentUser: user, currentRole: role, isLoggedIn: true }); }
 }
 
 async function fetchAndPopulateUsers() {
@@ -85,11 +84,8 @@ async function fetchAndPopulateUsers() {
         AppState.allUsers = response.data;
         const currentSelection = userFilterDropdown.value;
         userFilterDropdown.innerHTML = '<option value="" selected disabled>--- เลือกผู้ใช้ ---</option>';
-        // ** FIX **: Admin also gets a normal user list, but can delete anyone
         AppState.allUsers.forEach(user => {
-            if (user.username) {
-                userFilterDropdown.innerHTML += `<option value="${user.username}">${user.username}</option>`;
-            }
+            if (user.username) { userFilterDropdown.innerHTML += `<option value="${user.username}">${user.username}</option>`; }
         });
         userFilterDropdown.value = currentSelection;
     }
@@ -103,16 +99,20 @@ function renderTasks(tasks) {
     taskList.innerHTML = tasks.map(task => {
         const canManage = AppState.isLoggedIn && (AppState.currentRole === 'admin' || AppState.currentUser === task.owner);
         const actionsHtml = canManage ?
-            `<div class="task-actions">
+            `<div class="task-actions btn-group">
+                <button class="btn btn-sm btn-outline-warning" onclick="handleEditTask('${task.taskId}')" title="แก้ไขงาน"><i class="bi bi-pencil-square"></i></button>
                 <button class="btn btn-sm btn-outline-danger" onclick="handleDeleteTask('${task.taskId}')" title="ลบงาน"><i class="bi bi-trash"></i></button>
             </div>` : '';
         
-        // ** FIX **: Format the date to Thai style (DD/MM/YYYY B.E.)
         const formattedDate = (dateString) => {
             if (!dateString || !dateString.includes('-')) return dateString;
-            const parts = dateString.split('-');
-            const year = parseInt(parts[0]) + 543;
-            return `${parts[2]}/${parts[1]}/${year}`;
+            try {
+                const parts = dateString.split('-');
+                const year = parseInt(parts[0]) + 543;
+                return `${parts[2]}/${parts[1]}/${year}`;
+            } catch (e) {
+                return dateString; // Return original if format is unexpected
+            }
         };
 
         return `
@@ -126,6 +126,7 @@ function renderTasks(tasks) {
                         </div>
                         <div class="text-end">
                             <strong class="d-block">${task.taskName}</strong>
+                            <span class="text-muted">${task.location || ''}</span>
                         </div>
                     </div>
                 </div>
@@ -138,29 +139,16 @@ function updateUI() {
     loggedInControls.classList.toggle('d-none', !loggedIn);
     loginBtn.classList.toggle('d-none', loggedIn);
     fabFooter.classList.toggle('d-none', !loggedIn);
-    // ** FIX **: Dropdown is always hidden when logged in.
     userFilterDropdown.parentElement.style.visibility = loggedIn ? 'hidden' : 'visible';
     
     if (loggedIn) {
-        // ** FIX **: Show only username
         userDisplay.textContent = AppState.currentUser;
         manageUsersBtn.classList.toggle('d-none', AppState.currentRole !== 'admin');
     }
 }
 
 async function handleLogin() {
-    const { value: formValues } = await Swal.fire({
-        title: 'เข้าสู่ระบบ',
-        html: `<input id="swal-input1" class="swal2-input" placeholder="ชื่อผู้ใช้" required>
-               <input id="swal-input2" type="password" class="swal2-input" placeholder="รหัสผ่าน" required>`,
-        focusConfirm: false, confirmButtonText: 'เข้าสู่ระบบ', showCancelButton: true, cancelButtonText: 'ยกเลิก',
-        preConfirm: () => {
-            const u = document.getElementById('swal-input1').value;
-            const p = document.getElementById('swal-input2').value;
-            if (!u || !p) Swal.showValidationMessage('กรุณากรอกชื่อผู้ใช้และรหัสผ่าน');
-            return [u, p];
-        }
-    });
+    const { value: formValues } = await Swal.fire({ title: 'เข้าสู่ระบบ', html: `<input id="swal-input1" class="swal2-input" placeholder="ชื่อผู้ใช้" required><input id="swal-input2" type="password" class="swal2-input" placeholder="รหัสผ่าน" required>`, focusConfirm: false, confirmButtonText: 'เข้าสู่ระบบ', showCancelButton: true, cancelButtonText: 'ยกเลิก', preConfirm: () => { const u = document.getElementById('swal-input1').value; const p = document.getElementById('swal-input2').value; if (!u || !p) Swal.showValidationMessage('กรุณากรอกชื่อผู้ใช้และรหัสผ่าน'); return [u, p]; } });
     if (formValues) {
         showLoader('กำลังตรวจสอบ...');
         const [username, password] = formValues;
@@ -172,12 +160,9 @@ async function handleLogin() {
             checkLoginState();
             await fetchAndPopulateUsers();
             updateUI();
-            // ** FIX **: After login, set dropdown to current user and fetch tasks.
             userFilterDropdown.value = response.username;
             if(userFilterDropdown.value) fetchTasks(response.username);
-        } else {
-            showError(response?.message || 'ชื่อผู้ใช้หรือรหัสผ่านไม่ถูกต้อง');
-        }
+        } else { showError(response?.message || 'ชื่อผู้ใช้หรือรหัสผ่านไม่ถูกต้อง'); }
     }
 }
 
@@ -187,19 +172,41 @@ function handleLogout() {
     window.location.reload();
 }
 
+function handleEditTask(taskId) {
+    const taskToEdit = AppState.currentTasks.find(t => t.taskId === taskId);
+    if (taskToEdit) {
+        AppState.editingTaskId = taskId;
+        taskModalTitle.textContent = 'แก้ไขงาน';
+        taskForm['task-date'].value = taskToEdit.date;
+        taskForm['task-time'].value = taskToEdit.time;
+        taskForm['task-name'].value = taskToEdit.taskName;
+        taskForm['task-location'].value = taskToEdit.location;
+        taskModal.show();
+    }
+}
+
 async function handleSaveTask(event) {
     event.preventDefault();
     const payload = {
-        owner: AppState.currentUser,
         date: taskDateInput.value,
         time: document.getElementById('task-time').value,
         taskName: taskForm['task-name'].value,
         location: taskForm['task-location'].value,
     };
+
+    let action = 'addTask';
+    if (AppState.editingTaskId) {
+        action = 'updateTask';
+        payload.taskId = AppState.editingTaskId;
+    } else {
+        payload.owner = AppState.currentUser;
+    }
+
     showLoader('กำลังบันทึก...');
     const authData = { username: AppState.currentUser, role: AppState.currentRole };
-    const response = await fetchAPI('POST', { action: 'addTask', auth: authData, payload });
+    const response = await fetchAPI('POST', { action, auth: authData, payload });
     Swal.close();
+
     if (response?.status === 'success') {
         taskModal.hide();
         showSuccess('บันทึกสำเร็จ!');
