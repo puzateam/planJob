@@ -1,1 +1,73 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Planjob - ตารางงาน</title>
+    <link rel="stylesheet" href="style.css">
+    <link rel="manifest" href="manifest.json">
+    <meta name="theme-color" content="#4CAF50"/>
+    <script src="script.js" defer></script>
+</head>
+<body>
 
+    <!-- Loader -->
+    <div id="loader" class="loader-container" style="display: none;">
+        <div class="loader"></div>
+    </div>
+
+    <!-- Login Container -->
+    <div id="login-container">
+        <div class="login-box">
+            <h1>Planjob</h1>
+            <p>กรุณาลงชื่อเข้าใช้</p>
+            <form id="login-form">
+                <input type="text" id="username" placeholder="ชื่อผู้ใช้" required>
+                <input type="password" id="password" placeholder="รหัสผ่าน" required>
+                <button type="submit">เข้าสู่ระบบ</button>
+            </form>
+            <p id="login-error" class="error-message"></p>
+        </div>
+    </div>
+
+    <!-- App Container (Hidden by default) -->
+    <div id="app-container" style="display: none;">
+        <header>
+            <h1>ตารางงานของคุณ (<span id="user-display"></span>)</h1>
+            <button id="logout-btn">ออกจากระบบ</button>
+        </header>
+
+        <main id="task-list">
+            <!-- Task items will be injected here by JavaScript -->
+        </main>
+
+        <footer>
+            <button id="add-task-btn">+</button>
+        </footer>
+    </div>
+
+    <!-- Add/Edit Task Modal (Hidden by default) -->
+    <div id="task-modal" class="modal">
+        <div class="modal-content">
+            <span class="close-btn">×</span>
+            <h2 id="modal-title">เพิ่มงานใหม่</h2>
+            <form id="task-form">
+                <label for="task-date">วันที่:</label>
+                <input type="date" id="task-date" required>
+                
+                <label for="task-time">เวลา:</label>
+                <input type="time" id="task-time" required>
+
+                <label for="task-name">งานที่ต้องทำ:</label>
+                <input type="text" id="task-name" placeholder="เช่น ประชุมทีม" required>
+
+                <label for="task-location">สถานที่:</label>
+                <input type="text" id="task-location" placeholder="เช่น ห้องประชุมใหญ่" required>
+
+                <button type="submit">บันทึก</button>
+            </form>
+        </div>
+    </div>
+
+</body>
+</html>
