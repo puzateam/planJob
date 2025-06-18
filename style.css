@@ -14,7 +14,6 @@
     --bs-btn-active-border-color: #327a35;
 }
 
-/* Header Styles */
 header #user-filter-section {
     max-width: 200px;
     flex-grow: 1;
@@ -24,10 +23,9 @@ header #user-filter-section {
     padding: 0.25rem 0.5rem;
 }
 
-/* Task Card Styles */
 .task-card .card-body {
     position: relative;
-    padding-right: 45px; /* Make space for action buttons */
+    padding-right: 45px;
 }
 .task-card {
     border-left: 5px solid var(--bs-primary);
@@ -38,7 +36,6 @@ header #user-filter-section {
     right: 0.5rem;
 }
 
-/* Floating Action Button (FAB) Style */
 .fab {
     position: fixed;
     width: 60px;
@@ -46,6 +43,6 @@ header #user-filter-section {
     bottom: 20px;
     right: 20px;
     font-size: 2rem;
-    line-height: 1.5; /* Center the '+' vertically */
-    z-index: 1030; /* Ensure it's above other content */
+    line-height: 1.5;
+    z-index: 1030;
 }
