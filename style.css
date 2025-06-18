@@ -22,10 +22,15 @@ header #user-filter-section {
 }
 
 .header-icon {
-    width: 32px;
-    height: 32px;
+    /* ** FIX **: Changed from px to em for responsive scaling */
+    width: 1.5em;
+    height: 1.5em;
     border-radius: 4px;
+    /* Added for better vertical alignment with text */
+    vertical-align: middle;
+    margin-bottom: 0.2em; /* Fine-tune vertical position */
 }
+
 
 /* Status Bar */
 #status-bar {
