@@ -176,7 +176,7 @@ function updateUI() {
     fabFooter.classList.toggle('d-none', !loggedIn);
     
     if (loggedIn) {
-        statusBarText.textContent = `ตารางงานของ ${AppState.currentUser}`;
+        statusBarText.textContent = `${AppState.currentUser}`;
         manageUsersBtn.classList.toggle('d-none', AppState.currentRole !== 'admin');
     }
 }
