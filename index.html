@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ระบบตารางงาน</title>
+    <title>Planjob - ตารางงาน</title>
     <!-- Google Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -52,7 +52,7 @@
 
                 <!-- Logout Button -->
                 <button id="logout-btn" class="btn btn-danger btn-sm">
-                    <i class="bi bi-box-arrow-right"></i>Logout
+                    <i class="bi bi-box-arrow-right"></i>LogOut
                 </button>
             </div>
         </div>
@@ -72,7 +72,7 @@
         <div class="modal-dialog modal-dialog-centered modal-lg"><div class="modal-content"><div class="modal-header"><h5 class="modal-title" id="manage-users-modal-label">จัดการผู้ใช้งาน</h5><button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button></div><div class="modal-body"><h6>เพิ่มผู้ใช้ใหม่</h6><form id="add-user-form" class="row gx-3 gy-2 align-items-center mb-4"><div class="col-sm-3"><input type="text" class="form-control" id="new-username" placeholder="Username" required></div><div class="col-sm-3"><input type="password" class="form-control" id="new-password" placeholder="Password" required></div><div class="col-sm-3"><select class="form-select" id="new-role"><option value="general" selected>General</option><option value="admin">Admin</option></select></div><div class="col-sm-3"><button type="submit" class="btn btn-success w-100">เพิ่มผู้ใช้</button></div></form><hr><h6>รายชื่อผู้ใช้ปัจจุบัน</h6><div id="user-list-table-container"></div></div></div></div>
     </div>
 
-    <!-- Scripts (No Changes Needed) -->
+    <!-- Scripts -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <script src="script.js"></script>
