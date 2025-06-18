@@ -16,26 +16,50 @@
 
 /* Header Styles */
 header #user-filter-section {
-    flex-basis: 150px;
-    margin: 0 0.5rem;
+    max-width: 200px;
+    flex-grow: 1;
+    margin: 0 1rem;
 }
-header #date-filter-section {
-    display: flex;
-    gap: 0.5rem;
-    flex-basis: 220px;
-    margin: 0 0.5rem;
-}
-#logged-in-controls .btn {
-    padding: 0.25rem 0.5rem;
+
+/* Status Bar */
+#status-bar {
+    border-bottom: 1px solid #dee2e6;
 }
 
 /* Task Card Styles */
-.task-card .card-body { position: relative; padding-right: 45px; }
-.task-card { border-left: 5px solid var(--bs-primary); }
-.task-actions { position: absolute; top: 0.5rem; right: 0.5rem; }
+.task-card .card-body {
+    position: relative;
+    padding-right: 55px; /* Make space for action buttons */
+}
+.task-card {
+    border-left: 5px solid var(--bs-primary);
+}
+.task-actions {
+    position: absolute;
+    top: 0.5rem;
+    right: 0.5rem;
+    display: flex;
+    flex-direction: column; /* Stack buttons vertically */
+    gap: 0.3rem; /* Add space between buttons */
+}
+.task-actions .btn {
+    padding: 0.1rem 0.4rem; /* Make buttons a bit smaller */
+    font-size: 0.8rem;
+}
 
 /* FAB Style */
-.fab { position: fixed; width: 60px; height: 60px; bottom: 20px; right: 20px; font-size: 2rem; line-height: 1.5; z-index: 1030; }
+.fab {
+    position: fixed;
+    width: 60px;
+    height: 60px;
+    bottom: 20px;
+    right: 20px;
+    font-size: 2rem;
+    line-height: 1.5;
+    z-index: 1030;
+}
 
 /* User Management Modal Style */
-#user-list-table-container select.form-select-sm { max-width: 120px; }
+#user-list-table-container select.form-select-sm {
+    max-width: 120px;
+}
