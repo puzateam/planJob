@@ -1,6 +1,6 @@
 {
-    "name": "Planjob - ตารางงาน",
-    "short_name": "Planjob",
+    "name": "ระบบตารางงาน",
+    "short_name": "ตารางงาน",
     "description": "เว็บแอปพลิเคชันสำหรับจัดการตารางงานส่วนตัว",
     "start_url": ".",
     "display": "standalone",
