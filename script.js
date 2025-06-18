@@ -180,6 +180,9 @@ function handleLogout() {
     window.location.reload();
 }
 
+// ======================================================
+// ===== จุดที่แก้ไขอยู่ตรงนี้ (THE FIX IS HERE) =====
+// ======================================================
 async function handleSaveTask(event) {
     event.preventDefault();
     const payload = {
@@ -190,7 +193,19 @@ async function handleSaveTask(event) {
         location: taskForm['task-location'].value,
     };
     showLoader('กำลังบันทึก...');
-    const response = await fetchAPI('POST', { action: 'addTask', auth: AppState, payload });
+    
+    // **FIX:** สร้าง auth object ให้ถูกต้องก่อนส่ง
+    const authData = {
+        username: AppState.currentUser,
+        role: AppState.currentRole
+    };
+
+    const response = await fetchAPI('POST', { 
+        action: 'addTask', 
+        auth: authData, // ส่ง object ที่มี key 'username' และ 'role'
+        payload: payload 
+    });
+    
     Swal.close();
     if (response?.status === 'success') {
         taskModal.hide();
@@ -200,6 +215,8 @@ async function handleSaveTask(event) {
         showError(response?.message || 'เกิดข้อผิดพลาด');
     }
 }
+// ======================================================
+// ======================================================
 
 async function handleDeleteTask(taskId) {
     const result = await Swal.fire({
@@ -212,7 +229,8 @@ async function handleDeleteTask(taskId) {
     });
     if (result.isConfirmed) {
         showLoader('กำลังลบ...');
-        const response = await fetchAPI('POST', { action: 'deleteTask', auth: AppState, payload: { taskId } });
+        const authData = { username: AppState.currentUser, role: AppState.currentRole };
+        const response = await fetchAPI('POST', { action: 'deleteTask', auth: authData, payload: { taskId } });
         Swal.close();
         if (response?.status === 'success') {
             showSuccess('ลบข้อมูลสำเร็จ');
@@ -264,7 +282,8 @@ async function handleAddUser(event) {
         newRole: document.getElementById('new-role').value,
     };
     showLoader('กำลังเพิ่มผู้ใช้...');
-    const response = await fetchAPI('POST', { action: 'addUser', auth: AppState, payload });
+    const authData = { username: AppState.currentUser, role: AppState.currentRole };
+    const response = await fetchAPI('POST', { action: 'addUser', auth: authData, payload });
     Swal.close();
     if (response?.status === 'success') {
         showSuccess(response.message);
@@ -286,7 +305,8 @@ async function handleDeleteUser(usernameToDelete) {
     });
     if (result.isConfirmed) {
         showLoader('กำลังลบ...');
-        const response = await fetchAPI('POST', { action: 'deleteUser', auth: AppState, payload: { usernameToDelete } });
+        const authData = { username: AppState.currentUser, role: AppState.currentRole };
+        const response = await fetchAPI('POST', { action: 'deleteUser', auth: authData, payload: { usernameToDelete } });
         Swal.close();
         if (response?.status === 'success') {
             showSuccess(response.message);
@@ -300,7 +320,8 @@ async function handleDeleteUser(usernameToDelete) {
 
 async function handleRoleChange(usernameToUpdate, newRole) {
     showLoader('กำลังอัปเดตสิทธิ์...');
-    const response = await fetchAPI('POST', { action: 'updateUserRole', auth: AppState, payload: { usernameToUpdate, newRole } });
+    const authData = { username: AppState.currentUser, role: AppState.currentRole };
+    const response = await fetchAPI('POST', { action: 'updateUserRole', auth: authData, payload: { usernameToUpdate, newRole } });
     Swal.close();
     if (response?.status === 'success') {
         showSuccess('อัปเดตสิทธิ์สำเร็จ!');
