@@ -22,8 +22,11 @@
 
     <div id="app-container">
         <header class="bg-primary text-white shadow-sm p-3 d-flex justify-content-between align-items-center sticky-top">
-            <!-- Left Side: App Title -->
-            <h1 class="h5 mb-0">ตารางงาน</h1>
+            <!-- Left Side: App Title with Icon -->
+            <h1 class="h5 mb-0 d-flex align-items-center">
+                <img src="https://raw.githubusercontent.com/puzateam/planJob/main/icons/icon-192x192.png" alt="Planjob Icon" class="header-icon me-2">
+                ตารางงาน
+            </h1>
             
             <!-- Center: User Filter Dropdown -->
             <div id="user-filter-section">
@@ -32,27 +35,25 @@
                 </select>
             </div>
             
-            <!-- Right Side: User Controls -->
-            <div id="header-controls">
-                <!-- Logged Out State -->
-                <button id="login-btn" class="btn btn-light btn-sm">เข้าสู่ระบบ</button>
-                
-                <!-- Logged In State (ปุ่มแนวตั้ง) -->
-                <div id="logged-in-controls" class="btn-group-vertical btn-group-sm d-none">
-                    <button id="manage-users-btn" class="btn btn-outline-light d-none">
-                        <i class="bi bi-people"></i>
-                    </button>AddUser
-                    <button id="logout-btn" class="btn btn-outline-danger">
-                        <i class="bi bi-box-arrow-right"></i>
-                    </button>Logout
-                </div>
-            </div>
+            <!-- Right Side: Login Button (Only for logged-out state) -->
+            <button id="login-btn" class="btn btn-light btn-sm">เข้าสู่ระบบ</button>
         </header>
         
         <!-- User Status Bar -->
         <div id="status-bar" class="container-fluid bg-light py-2 d-none">
-            <div class="container text-center">
-                <span id="status-bar-text" class="fw-bold text-muted"></span>
+            <div class="container d-flex justify-content-between align-items-center">
+                <!-- Manage Users Button (for Admin) -->
+                <button id="manage-users-btn" class="btn btn-primary btn-sm d-none">
+                    <i class="bi bi-people-fill"></i>AddUser
+                </button>
+                
+                <!-- Status Text -->
+                <span id="status-bar-text" class="fw-bold text-muted mx-auto"></span>
+
+                <!-- Logout Button -->
+                <button id="logout-btn" class="btn btn-danger btn-sm">
+                    <i class="bi bi-box-arrow-right"></i>Logout
+                </button>
             </div>
         </div>
 
@@ -71,7 +72,7 @@
         <div class="modal-dialog modal-dialog-centered modal-lg"><div class="modal-content"><div class="modal-header"><h5 class="modal-title" id="manage-users-modal-label">จัดการผู้ใช้งาน</h5><button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button></div><div class="modal-body"><h6>เพิ่มผู้ใช้ใหม่</h6><form id="add-user-form" class="row gx-3 gy-2 align-items-center mb-4"><div class="col-sm-3"><input type="text" class="form-control" id="new-username" placeholder="Username" required></div><div class="col-sm-3"><input type="password" class="form-control" id="new-password" placeholder="Password" required></div><div class="col-sm-3"><select class="form-select" id="new-role"><option value="general" selected>General</option><option value="admin">Admin</option></select></div><div class="col-sm-3"><button type="submit" class="btn btn-success w-100">เพิ่มผู้ใช้</button></div></form><hr><h6>รายชื่อผู้ใช้ปัจจุบัน</h6><div id="user-list-table-container"></div></div></div></div>
     </div>
 
-    <!-- Scripts -->
+    <!-- Scripts (No Changes Needed) -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <script src="script.js"></script>
