@@ -46,9 +46,9 @@ async function initializeApp() {
     await fetchAndPopulateUsers();
     taskList.innerHTML = '<p class="text-center text-muted mt-5">กรุณาเลือกผู้ใช้จากเมนูด้านบนเพื่อดูตารางงาน</p>';
     if (AppState.isLoggedIn) {
-        const initialUser = AppState.currentRole === 'admin' ? 'all' : AppState.currentUser;
-        userFilterDropdown.value = initialUser;
-        if(userFilterDropdown.value) await fetchTasks(initialUser);
+        // Logged in users see their own data by default.
+        userFilterDropdown.value = AppState.currentUser;
+        if(userFilterDropdown.value) await fetchTasks(AppState.currentUser);
     }
     updateUI();
     Swal.close();
@@ -85,9 +85,7 @@ async function fetchAndPopulateUsers() {
         AppState.allUsers = response.data;
         const currentSelection = userFilterDropdown.value;
         userFilterDropdown.innerHTML = '<option value="" selected disabled>--- เลือกผู้ใช้ ---</option>';
-        if (AppState.isLoggedIn && AppState.currentRole === 'admin') {
-            userFilterDropdown.innerHTML += '<option value="all">ดูทั้งหมด</option>';
-        }
+        // ** FIX **: Admin also gets a normal user list, but can delete anyone
         AppState.allUsers.forEach(user => {
             if (user.username) {
                 userFilterDropdown.innerHTML += `<option value="${user.username}">${user.username}</option>`;
@@ -108,13 +106,22 @@ function renderTasks(tasks) {
             `<div class="task-actions">
                 <button class="btn btn-sm btn-outline-danger" onclick="handleDeleteTask('${task.taskId}')" title="ลบงาน"><i class="bi bi-trash"></i></button>
             </div>` : '';
+        
+        // ** FIX **: Format the date to Thai style (DD/MM/YYYY B.E.)
+        const formattedDate = (dateString) => {
+            if (!dateString || !dateString.includes('-')) return dateString;
+            const parts = dateString.split('-');
+            const year = parseInt(parts[0]) + 543;
+            return `${parts[2]}/${parts[1]}/${year}`;
+        };
+
         return `
             <div class="card task-card mb-3">
                 <div class="card-body">
                     ${actionsHtml}
                     <div class="d-flex justify-content-between">
                         <div class="pe-3">
-                            <strong class="d-block">${task.date}</strong>
+                            <strong class="d-block">${formattedDate(task.date)}</strong>
                             <span>${task.time} น.</span>
                         </div>
                         <div class="text-end">
@@ -131,9 +138,12 @@ function updateUI() {
     loggedInControls.classList.toggle('d-none', !loggedIn);
     loginBtn.classList.toggle('d-none', loggedIn);
     fabFooter.classList.toggle('d-none', !loggedIn);
-    userFilterDropdown.parentElement.style.visibility = (loggedIn && AppState.currentRole !== 'admin') ? 'hidden' : 'visible';
+    // ** FIX **: Dropdown is always hidden when logged in.
+    userFilterDropdown.parentElement.style.visibility = loggedIn ? 'hidden' : 'visible';
+    
     if (loggedIn) {
-        userDisplay.textContent = `${AppState.currentUser} (${AppState.currentRole})`;
+        // ** FIX **: Show only username
+        userDisplay.textContent = AppState.currentUser;
         manageUsersBtn.classList.toggle('d-none', AppState.currentRole !== 'admin');
     }
 }
@@ -143,10 +153,7 @@ async function handleLogin() {
         title: 'เข้าสู่ระบบ',
         html: `<input id="swal-input1" class="swal2-input" placeholder="ชื่อผู้ใช้" required>
                <input id="swal-input2" type="password" class="swal2-input" placeholder="รหัสผ่าน" required>`,
-        focusConfirm: false,
-        confirmButtonText: 'เข้าสู่ระบบ',
-        showCancelButton: true,
-        cancelButtonText: 'ยกเลิก',
+        focusConfirm: false, confirmButtonText: 'เข้าสู่ระบบ', showCancelButton: true, cancelButtonText: 'ยกเลิก',
         preConfirm: () => {
             const u = document.getElementById('swal-input1').value;
             const p = document.getElementById('swal-input2').value;
@@ -165,9 +172,9 @@ async function handleLogin() {
             checkLoginState();
             await fetchAndPopulateUsers();
             updateUI();
-            const initialUser = response.role === 'admin' ? 'all' : response.username;
-            userFilterDropdown.value = initialUser;
-            if(userFilterDropdown.value) fetchTasks(initialUser);
+            // ** FIX **: After login, set dropdown to current user and fetch tasks.
+            userFilterDropdown.value = response.username;
+            if(userFilterDropdown.value) fetchTasks(response.username);
         } else {
             showError(response?.message || 'ชื่อผู้ใช้หรือรหัสผ่านไม่ถูกต้อง');
         }
@@ -180,9 +187,6 @@ function handleLogout() {
     window.location.reload();
 }
 
-// ======================================================
-// ===== จุดที่แก้ไขอยู่ตรงนี้ (THE FIX IS HERE) =====
-// ======================================================
 async function handleSaveTask(event) {
     event.preventDefault();
     const payload = {
@@ -193,40 +197,20 @@ async function handleSaveTask(event) {
         location: taskForm['task-location'].value,
     };
     showLoader('กำลังบันทึก...');
-    
-    // **FIX:** สร้าง auth object ให้ถูกต้องก่อนส่ง
-    const authData = {
-        username: AppState.currentUser,
-        role: AppState.currentRole
-    };
-
-    const response = await fetchAPI('POST', { 
-        action: 'addTask', 
-        auth: authData, // ส่ง object ที่มี key 'username' และ 'role'
-        payload: payload 
-    });
-    
+    const authData = { username: AppState.currentUser, role: AppState.currentRole };
+    const response = await fetchAPI('POST', { action: 'addTask', auth: authData, payload });
     Swal.close();
     if (response?.status === 'success') {
         taskModal.hide();
         showSuccess('บันทึกสำเร็จ!');
-        fetchTasks(userFilterDropdown.value);
+        fetchTasks(AppState.currentUser);
     } else {
         showError(response?.message || 'เกิดข้อผิดพลาด');
     }
 }
-// ======================================================
-// ======================================================
 
 async function handleDeleteTask(taskId) {
-    const result = await Swal.fire({
-        title: 'ยืนยันการลบ?',
-        text: "คุณจะไม่สามารถกู้คืนข้อมูลนี้ได้!",
-        icon: 'warning',
-        showCancelButton: true,
-        confirmButtonText: 'ใช่, ลบเลย!',
-        cancelButtonText: 'ยกเลิก'
-    });
+    const result = await Swal.fire({ title: 'ยืนยันการลบ?', text: "คุณจะไม่สามารถกู้คืนข้อมูลนี้ได้!", icon: 'warning', showCancelButton: true, confirmButtonText: 'ใช่, ลบเลย!', cancelButtonText: 'ยกเลิก' });
     if (result.isConfirmed) {
         showLoader('กำลังลบ...');
         const authData = { username: AppState.currentUser, role: AppState.currentRole };
@@ -234,7 +218,7 @@ async function handleDeleteTask(taskId) {
         Swal.close();
         if (response?.status === 'success') {
             showSuccess('ลบข้อมูลสำเร็จ');
-            fetchTasks(userFilterDropdown.value);
+            fetchTasks(AppState.currentUser);
         } else {
             showError(response?.message || 'เกิดข้อผิดพลาด');
         }
@@ -244,13 +228,7 @@ async function handleDeleteTask(taskId) {
 function populateUserManagementModal() {
     document.getElementById('user-list-table-container').innerHTML = `
         <table class="table table-striped table-hover align-middle">
-            <thead>
-                <tr>
-                    <th>Username</th>
-                    <th>Role</th>
-                    <th class="text-end">Action</th>
-                </tr>
-            </thead>
+            <thead><tr><th>Username</th><th>Role</th><th class="text-end">Action</th></tr></thead>
             <tbody>
                 ${AppState.allUsers.map(user => {
                     if (!user.username) return '';
@@ -263,12 +241,7 @@ function populateUserManagementModal() {
                     const actionButtonHtml = user.username !== 'admin'
                         ? `<button class="btn btn-sm btn-danger" onclick="handleDeleteUser('${user.username}')">ลบ</button>`
                         : '';
-                    return `
-                        <tr>
-                            <td>${user.username}</td>
-                            <td>${roleDisplayHtml}</td>
-                            <td class="text-end">${actionButtonHtml}</td>
-                        </tr>`;
+                    return `<tr><td>${user.username}</td><td>${roleDisplayHtml}</td><td class="text-end">${actionButtonHtml}</td></tr>`;
                 }).join('')}
             </tbody>
         </table>`;
@@ -296,13 +269,7 @@ async function handleAddUser(event) {
 }
 
 async function handleDeleteUser(usernameToDelete) {
-    const result = await Swal.fire({
-        title: `ยืนยันการลบผู้ใช้ ${usernameToDelete}?`,
-        icon: 'warning',
-        showCancelButton: true,
-        confirmButtonText: 'ใช่, ลบ',
-        cancelButtonText: 'ยกเลิก'
-    });
+    const result = await Swal.fire({ title: `ยืนยันการลบผู้ใช้ ${usernameToDelete}?`, icon: 'warning', showCancelButton: true, confirmButtonText: 'ใช่, ลบ', cancelButtonText: 'ยกเลิก' });
     if (result.isConfirmed) {
         showLoader('กำลังลบ...');
         const authData = { username: AppState.currentUser, role: AppState.currentRole };
@@ -312,9 +279,7 @@ async function handleDeleteUser(usernameToDelete) {
             showSuccess(response.message);
             await fetchAndPopulateUsers();
             populateUserManagementModal();
-        } else {
-            showError(response.message);
-        }
+        } else { showError(response.message); }
     }
 }
 
@@ -336,19 +301,12 @@ async function handleRoleChange(usernameToUpdate, newRole) {
 async function fetchAPI(method, body = null) {
     try {
         let url = API_URL;
-        const options = {
-            method: 'POST',
-            redirect: 'follow',
-            muteHttpExceptions: true,
-            headers: { 'Content-Type': 'text/plain;charset=utf-8' }
-        };
+        const options = { method: 'POST', redirect: 'follow', muteHttpExceptions: true, headers: { 'Content-Type': 'text/plain;charset=utf-8' } };
         if (method.startsWith('GET')) {
             url += method.substring(3);
             const res = await fetch(url);
             return await res.json();
-        } else {
-            options.body = JSON.stringify(body);
-        }
+        } else { options.body = JSON.stringify(body); }
         const response = await fetch(url, options);
         return await response.json();
     } catch (error) {
@@ -357,22 +315,12 @@ async function fetchAPI(method, body = null) {
     }
 }
 
-function showLoader(title = 'กำลังโหลด...') {
-    Swal.fire({ title, allowOutsideClick: false, didOpen: () => Swal.showLoading() });
-}
-
-function showSuccess(title) {
-    Swal.fire({ icon: 'success', title, showConfirmButton: false, timer: 1500 });
-}
-
-function showError(text) {
-    Swal.fire({ icon: 'error', title: 'ผิดพลาด!', text });
-}
+function showLoader(title = 'กำลังโหลด...') { Swal.fire({ title, allowOutsideClick: false, didOpen: () => Swal.showLoading() }); }
+function showSuccess(title) { Swal.fire({ icon: 'success', title, showConfirmButton: false, timer: 1500 }); }
+function showError(text) { Swal.fire({ icon: 'error', title: 'ผิดพลาด!', text }); }
 
 if ('serviceWorker' in navigator) {
     window.addEventListener('load', () => {
-        navigator.serviceWorker.register('./service-worker.js')
-            .then(reg => console.log('Service Worker: Registered'))
-            .catch(err => console.log(`Service Worker: Error: ${err}`));
+        navigator.serviceWorker.register('./service-worker.js').then(reg => console.log('Service Worker: Registered')).catch(err => console.log(`Service Worker: Error: ${err}`));
     });
 }
