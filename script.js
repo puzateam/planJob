@@ -4,10 +4,11 @@ const API_URL = 'https://script.google.com/macros/s/AKfycbx1K5nqqUOiXBkn_fJpl0em
 const AppState = { currentUser: null, currentRole: null, isLoggedIn: false, allUsers: [], currentTasks: [], editingTaskId: null };
 // DOM Elements
 const userFilterDropdown = document.getElementById('user-filter-dropdown');
+const statusBar = document.getElementById('status-bar');
+const statusBarText = document.getElementById('status-bar-text');
 const loggedInControls = document.getElementById('logged-in-controls');
 const loginBtn = document.getElementById('login-btn');
 const manageUsersBtn = document.getElementById('manage-users-btn');
-const userDisplay = document.getElementById('user-display');
 const logoutBtn = document.getElementById('logout-btn');
 const taskList = document.getElementById('task-list');
 const fabFooter = document.getElementById('fab-footer');
@@ -27,7 +28,7 @@ userFilterDropdown.addEventListener('change', (e) => {
 loginBtn.addEventListener('click', handleLogin);
 logoutBtn.addEventListener('click', handleLogout);
 addTaskBtn.addEventListener('click', () => {
-    AppState.editingTaskId = null; // Ensure we are in "add" mode
+    AppState.editingTaskId = null;
     taskModalTitle.textContent = 'เพิ่มงานใหม่';
     taskForm.reset();
     taskDateInput.value = new Date().toISOString().split('T')[0];
@@ -99,7 +100,7 @@ function renderTasks(tasks) {
     taskList.innerHTML = tasks.map(task => {
         const canManage = AppState.isLoggedIn && (AppState.currentRole === 'admin' || AppState.currentUser === task.owner);
         const actionsHtml = canManage ?
-            `<div class="task-actions btn-group">
+            `<div class="task-actions">
                 <button class="btn btn-sm btn-outline-warning" onclick="handleEditTask('${task.taskId}')" title="แก้ไขงาน"><i class="bi bi-pencil-square"></i></button>
                 <button class="btn btn-sm btn-outline-danger" onclick="handleDeleteTask('${task.taskId}')" title="ลบงาน"><i class="bi bi-trash"></i></button>
             </div>` : '';
@@ -110,9 +111,7 @@ function renderTasks(tasks) {
                 const parts = dateString.split('-');
                 const year = parseInt(parts[0]) + 543;
                 return `${parts[2]}/${parts[1]}/${year}`;
-            } catch (e) {
-                return dateString; // Return original if format is unexpected
-            }
+            } catch (e) { return dateString; }
         };
 
         return `
@@ -136,13 +135,18 @@ function renderTasks(tasks) {
 
 function updateUI() {
     const loggedIn = AppState.isLoggedIn;
-    loggedInControls.classList.toggle('d-none', !loggedIn);
+    
+    // Header controls
     loginBtn.classList.toggle('d-none', loggedIn);
-    fabFooter.classList.toggle('d-none', !loggedIn);
+    loggedInControls.classList.toggle('d-none', !loggedIn);
     userFilterDropdown.parentElement.style.visibility = loggedIn ? 'hidden' : 'visible';
+
+    // Status Bar and FAB
+    statusBar.classList.toggle('d-none', !loggedIn);
+    fabFooter.classList.toggle('d-none', !loggedIn);
     
     if (loggedIn) {
-        userDisplay.textContent = AppState.currentUser;
+        statusBarText.textContent = `ตารางงานของ ${AppState.currentUser}`;
         manageUsersBtn.classList.toggle('d-none', AppState.currentRole !== 'admin');
     }
 }
@@ -193,7 +197,6 @@ async function handleSaveTask(event) {
         taskName: taskForm['task-name'].value,
         location: taskForm['task-location'].value,
     };
-
     let action = 'addTask';
     if (AppState.editingTaskId) {
         action = 'updateTask';
@@ -201,12 +204,10 @@ async function handleSaveTask(event) {
     } else {
         payload.owner = AppState.currentUser;
     }
-
     showLoader('กำลังบันทึก...');
     const authData = { username: AppState.currentUser, role: AppState.currentRole };
     const response = await fetchAPI('POST', { action, auth: authData, payload });
     Swal.close();
-
     if (response?.status === 'success') {
         taskModal.hide();
         showSuccess('บันทึกสำเร็จ!');
