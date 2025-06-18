@@ -39,7 +39,7 @@ header #user-filter-section {
     top: 0.5rem;
     right: 0.5rem;
     display: flex;
-    flex-direction: column; /* ** FIX **: Stack buttons vertically */
+    flex-direction: column; /* Stack buttons vertically */
     gap: 0.3rem; /* Add space between buttons */
 }
 .task-actions .btn {
