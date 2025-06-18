@@ -6,7 +6,6 @@ const AppState = { currentUser: null, currentRole: null, isLoggedIn: false, allU
 const userFilterDropdown = document.getElementById('user-filter-dropdown');
 const statusBar = document.getElementById('status-bar');
 const statusBarText = document.getElementById('status-bar-text');
-const loggedInControls = document.getElementById('logged-in-controls');
 const loginBtn = document.getElementById('login-btn');
 const manageUsersBtn = document.getElementById('manage-users-btn');
 const logoutBtn = document.getElementById('logout-btn');
@@ -138,7 +137,6 @@ function updateUI() {
     
     // Header controls
     loginBtn.classList.toggle('d-none', loggedIn);
-    loggedInControls.classList.toggle('d-none', !loggedIn);
     userFilterDropdown.parentElement.style.visibility = loggedIn ? 'hidden' : 'visible';
 
     // Status Bar and FAB
