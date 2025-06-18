@@ -91,6 +91,35 @@ async function fetchAndPopulateUsers() {
     }
 }
 
+/**
+ * ** NEW HELPER FUNCTION **
+ * Determines the CSS class for the task card based on its date.
+ * @param {string} dateString - The date of the task in 'YYYY-MM-DD' format.
+ * @returns {string} The CSS class name for coloring.
+ */
+function getTaskCardClass(dateString) {
+    if (!dateString) return '';
+
+    const today = new Date();
+    today.setHours(0, 0, 0, 0); // Normalize today to the start of the day
+
+    const taskDate = new Date(dateString);
+    taskDate.setHours(0, 0, 0, 0); // Normalize task date
+
+    const tomorrow = new Date(today);
+    tomorrow.setDate(today.getDate() + 1);
+
+    if (taskDate < today) {
+        return 'task-card-overdue'; // Overdue
+    } else if (taskDate.getTime() === today.getTime()) {
+        return 'task-card-today'; // Today
+    } else if (taskDate.getTime() === tomorrow.getTime()) {
+        return 'task-card-warning'; // Tomorrow (1 day before)
+    }
+    return ''; // Default for future tasks
+}
+
+
 function renderTasks(tasks) {
     if (tasks.length === 0) {
         taskList.innerHTML = '<p class="text-center text-muted mt-5">ไม่พบข้อมูลงาน</p>';
@@ -113,8 +142,11 @@ function renderTasks(tasks) {
             } catch (e) { return dateString; }
         };
 
+        // ** UPDATED **: Add the dynamic color class to the card
+        const cardColorClass = getTaskCardClass(task.date);
+
         return `
-            <div class="card task-card mb-3">
+            <div class="card task-card mb-3 ${cardColorClass}">
                 <div class="card-body">
                     ${actionsHtml}
                     <div class="d-flex justify-content-between">
@@ -144,7 +176,7 @@ function updateUI() {
     fabFooter.classList.toggle('d-none', !loggedIn);
     
     if (loggedIn) {
-        statusBarText.textContent = `${AppState.currentUser}`;
+        statusBarText.textContent = `ตารางงานของ ${AppState.currentUser}`;
         manageUsersBtn.classList.toggle('d-none', AppState.currentRole !== 'admin');
     }
 }
