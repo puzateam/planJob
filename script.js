@@ -1,9 +1,12 @@
 // ===============================================================
-// Planjob Frontend - v3.4 (Final Fixes)
+// Planjob Frontend - v3.5 (Final UI & Auth Fixes)
 // ===============================================================
+
 const API_URL = 'https://script.google.com/macros/s/AKfycbzdMsyel5LsNiVmTpKj60CJC_ll-PqhFTOqp4xkaaxNgF1my6mBqQmrJ53K09gFrzIt/exec';
 
 const AppState = { currentTeam: null, currentMember: null, currentRole: null, isLoggedIn: false, teamMembers: [], currentTasks: [], editingTaskId: null };
+
+// --- DOM ELEMENTS ---
 const loginView = document.getElementById('login-view');
 const appView = document.getElementById('app-view');
 const loginForm = document.getElementById('login-form');
@@ -23,6 +26,7 @@ const addUserForm = document.getElementById('add-user-form');
 const taskModal = new bootstrap.Modal(document.getElementById('task-modal'));
 const manageUsersModal = new bootstrap.Modal(document.getElementById('manage-users-modal'));
 
+// --- EVENT LISTENERS ---
 document.addEventListener('DOMContentLoaded', initializeApp);
 loginForm.addEventListener('submit', handleLogin);
 logoutBtn.addEventListener('click', handleLogout);
@@ -34,8 +38,9 @@ document.querySelectorAll('#theme-switcher .theme-btn').forEach(btn => {
     btn.addEventListener('click', (e) => handleThemeChange(e.target.dataset.theme));
 });
 
+// --- INITIALIZATION & CORE WORKFLOW ---
 function initializeApp() {
-    checkLoginState(); // Check first
+    checkLoginState(); // Check first to get team name
     const savedTheme = localStorage.getItem(`taskAppTheme_${AppState.currentTeam}`) || 'theme-green';
     applyTheme(savedTheme);
 
@@ -85,17 +90,22 @@ function handleLogout() {
     window.location.reload();
 }
 
+// --- UI & DATA RENDERING ---
 function updateUI() {
     if (AppState.isLoggedIn) {
         loginView.classList.add('d-none');
         appView.classList.remove('d-none');
+        
         headerTeamName.textContent = `ทีม: ${AppState.currentTeam}`;
         headerMemberName.textContent = `(${AppState.currentMember})`;
+
         const canManageTasks = AppState.currentRole === 'director' || AppState.currentRole === 'officer';
         const canManageMembers = AppState.currentRole === 'director';
+
         fabFooter.classList.toggle('d-none', !canManageTasks);
         manageUsersBtn.classList.toggle('d-none', !canManageMembers);
         themeSwitcher.classList.toggle('d-none', !canManageMembers);
+
     } else {
         loginView.classList.remove('d-none');
         appView.classList.add('d-none');
@@ -103,6 +113,7 @@ function updateUI() {
 }
 
 function renderTasks(tasks) {
+    // ... (This function is unchanged from the previous final script)
     if (!tasks || tasks.length === 0) {
         taskList.innerHTML = '<p class="text-center text-muted mt-5">ไม่พบข้อมูลงาน</p>';
         return;
@@ -116,6 +127,7 @@ function renderTasks(tasks) {
             const deleteBtn = canDelete ? `<button class="btn btn-sm btn-outline-danger" onclick="handleDeleteTask('${task.taskId}')" title="ลบงาน"><i class="bi bi-trash"></i></button>` : '';
             actionsHtml = `<div class="task-actions">${editBtn}${deleteBtn}</div>`;
         }
+        
         const cardColorClass = getTaskCardClass(task.date);
         return `
             <div class="card task-card mb-3 ${cardColorClass}">
@@ -137,6 +149,8 @@ function renderTasks(tasks) {
     }).join('');
 }
 
+
+// --- TASK & MEMBER HANDLERS ---
 async function fetchTasks() {
     const authData = { team: AppState.currentTeam, member_name: AppState.currentMember, role: AppState.currentRole };
     const response = await fetchAPI('POST', { action: 'getTasks', auth: authData });
@@ -281,6 +295,7 @@ async function handleDeleteMember(memberNameToDelete) {
     }
 }
 
+// --- UTILITY & THEME FUNCTIONS ---
 function populateTimeDropdown() {
     const timeSelect = document.getElementById('task-time');
     timeSelect.innerHTML = '';
@@ -310,17 +325,17 @@ function handleThemeChange(themeClass) {
     applyTheme(themeClass);
     showLoader('กำลังบันทึกธีม...');
     const authData = { team: AppState.currentTeam, member_name: AppState.currentMember, role: AppState.currentRole };
-    const response = fetchAPI('POST', { action: 'updateTeamTheme', auth: authData, payload: { theme: themeClass } });
-    Swal.close();
-    response.then(res => {
-        if(res.status === 'success') {
-            localStorage.setItem(`taskAppTheme_${AppState.currentTeam}`, themeClass);
-        } else {
-            showError('ไม่สามารถบันทึกธีมได้');
-            const oldTheme = localStorage.getItem(`taskAppTheme_${AppState.currentTeam}`) || 'theme-green';
-            applyTheme(oldTheme);
-        }
-    });
+    fetchAPI('POST', { action: 'updateTeamTheme', auth: authData, payload: { theme: themeClass } })
+        .then(res => {
+            Swal.close();
+            if(res.status === 'success') {
+                localStorage.setItem(`taskAppTheme_${AppState.currentTeam}`, themeClass);
+            } else {
+                showError('ไม่สามารถบันทึกธีมได้');
+                const oldTheme = localStorage.getItem(`taskAppTheme_${AppState.currentTeam}`) || 'theme-green';
+                applyTheme(oldTheme);
+            }
+        });
 }
 
 function applyTheme(themeClass) {
