@@ -1,11 +1,9 @@
 // ===============================================================
-// Planjob Frontend - v3.2 (Bug Fixes for Authentication & UI)
+// Planjob Frontend - v3.3 (Final Fixes for Date & Auth)
 // ===============================================================
 
-// !!! สำคัญ: แก้ไข URL นี้เป็น Web App URL ของคุณ !!!
 const API_URL = 'https://script.google.com/macros/s/AKfycbzdMsyel5LsNiVmTpKj60CJC_ll-PqhFTOqp4xkaaxNgF1my6mBqQmrJ53K09gFrzIt/exec';
 
-// --- 1. STATE & DOM ELEMENTS ---
 const AppState = { currentTeam: null, currentMember: null, currentRole: null, isLoggedIn: false, teamMembers: [], currentTasks: [], editingTaskId: null };
 const loginView = document.getElementById('login-view');
 const appView = document.getElementById('app-view');
@@ -23,11 +21,9 @@ const taskForm = document.getElementById('task-form');
 const taskDateInput = document.getElementById('task-date');
 const taskModalTitle = document.getElementById('task-modal-title-label');
 const addUserForm = document.getElementById('add-user-form');
-// Modals
 const taskModal = new bootstrap.Modal(document.getElementById('task-modal'));
 const manageUsersModal = new bootstrap.Modal(document.getElementById('manage-users-modal'));
 
-// --- 2. EVENT LISTENERS ---
 document.addEventListener('DOMContentLoaded', initializeApp);
 loginForm.addEventListener('submit', handleLogin);
 logoutBtn.addEventListener('click', handleLogout);
@@ -39,11 +35,9 @@ document.querySelectorAll('#theme-switcher .theme-btn').forEach(btn => {
     btn.addEventListener('click', (e) => handleThemeChange(e.target.dataset.theme));
 });
 
-// --- 3. INITIALIZATION & CORE WORKFLOW ---
 function initializeApp() {
     const savedTheme = localStorage.getItem('taskAppTheme') || 'theme-green';
     applyTheme(savedTheme);
-
     checkLoginState();
     if (AppState.isLoggedIn) {
         showLoader(`กำลังโหลดข้อมูลทีม ${AppState.currentTeam}...`);
@@ -90,22 +84,17 @@ function handleLogout() {
     window.location.reload();
 }
 
-// --- 4. UI & DATA RENDERING ---
 function updateUI() {
     if (AppState.isLoggedIn) {
         loginView.classList.add('d-none');
         appView.classList.remove('d-none');
-        
         headerTeamName.textContent = `ทีม: ${AppState.currentTeam}`;
         headerMemberName.textContent = `(${AppState.currentMember})`;
-
         const canManageTasks = AppState.currentRole === 'director' || AppState.currentRole === 'officer';
         const canManageMembers = AppState.currentRole === 'director';
-
         fabFooter.classList.toggle('d-none', !canManageTasks);
         manageUsersBtn.classList.toggle('d-none', !canManageMembers);
         themeSwitcher.classList.toggle('d-none', !canManageMembers);
-
     } else {
         loginView.classList.remove('d-none');
         appView.classList.add('d-none');
@@ -118,34 +107,22 @@ function renderTasks(tasks) {
         return;
     }
     taskList.innerHTML = tasks.map(task => {
-        const canEdit = AppState.isLoggedIn && (AppState.currentRole === 'director' || (AppState.currentRole === 'officer' && AppState.currentMember === task.creator));
+        const canEdit = AppState.currentRole === 'director' || (AppState.currentRole === 'officer' && AppState.currentMember === task.creator);
         const canDelete = canEdit;
-
         let actionsHtml = '';
         if (canEdit || canDelete) {
             const editBtn = canEdit ? `<button class="btn btn-sm btn-outline-warning" onclick="handleEditTask('${task.taskId}')" title="แก้ไขงาน"><i class="bi bi-pencil-square"></i></button>` : '';
             const deleteBtn = canDelete ? `<button class="btn btn-sm btn-outline-danger" onclick="handleDeleteTask('${task.taskId}')" title="ลบงาน"><i class="bi bi-trash"></i></button>` : '';
             actionsHtml = `<div class="task-actions">${editBtn}${deleteBtn}</div>`;
         }
-        
-        const formattedDate = (dateString) => {
-            if (!dateString || !dateString.includes('-')) return dateString;
-            try {
-                const parts = dateString.split('-');
-                const year = parseInt(parts[0]) + 543;
-                return `${parts[2]}/${parts[1]}/${year}`;
-            } catch (e) { return dateString; }
-        };
-
         const cardColorClass = getTaskCardClass(task.date);
-
         return `
             <div class="card task-card mb-3 ${cardColorClass}">
                 <div class="card-body">
                     ${actionsHtml}
                     <div class="d-flex justify-content-between">
                         <div class="pe-3">
-                            <strong class="d-block">${formattedDate(task.date)}</strong>
+                            <strong class="d-block">${task.date}</strong>
                             <span>${task.time} น.</span>
                         </div>
                         <div class="text-end">
@@ -159,7 +136,6 @@ function renderTasks(tasks) {
     }).join('');
 }
 
-// --- 5. TASK HANDLERS & API CALLS ---
 async function fetchTasks() {
     const authData = { team: AppState.currentTeam, member_name: AppState.currentMember, role: AppState.currentRole };
     const response = await fetchAPI('POST', { action: 'getTasks', auth: authData });
@@ -181,7 +157,9 @@ function handleEditTask(taskId) {
     if (taskToEdit) {
         AppState.editingTaskId = taskId;
         taskModalTitle.textContent = 'แก้ไขงาน';
-        taskForm['task-date'].value = taskToEdit.date;
+        const dateParts = taskToEdit.date.split('/');
+        const isoDate = `${parseInt(dateParts[2]) - 543}-${dateParts[1]}-${dateParts[0]}`;
+        taskForm['task-date'].value = isoDate;
         taskForm['task-time'].value = taskToEdit.time;
         taskForm['task-name'].value = taskToEdit.taskName;
         taskForm['task-location'].value = taskToEdit.location;
@@ -201,14 +179,9 @@ async function handleSaveTask(event) {
     if (AppState.editingTaskId) {
         action = 'updateTask';
         payload.taskId = AppState.editingTaskId;
-    } else {
-        // ** FIX **: Add team and creator to payload for new tasks
-        payload.team = AppState.currentTeam;
-        payload.creator = AppState.currentMember;
     }
-    showLoader('กำลังบันทึก...');
-    // ** FIX **: Pass the auth object with the request
     const authData = { team: AppState.currentTeam, member_name: AppState.currentMember, role: AppState.currentRole };
+    showLoader('กำลังบันทึก...');
     const response = await fetchAPI('POST', { action, auth: authData, payload });
     Swal.close();
     if (response?.status === 'success') {
@@ -236,10 +209,8 @@ async function handleDeleteTask(taskId) {
     }
 }
 
-// --- 6. MEMBER MANAGEMENT HANDLERS ---
 async function showManageUsersModal() {
     showLoader('กำลังโหลดรายชื่อสมาชิก...');
-    // ** FIX **: Pass the auth object with the request
     const authData = { team: AppState.currentTeam, member_name: AppState.currentMember, role: AppState.currentRole };
     const response = await fetchAPI('POST', { action: 'getMembers', auth: authData });
     Swal.close();
@@ -285,7 +256,7 @@ async function handleAddMember(event) {
     if (response?.status === 'success') {
         showSuccess(response.message);
         addUserForm.reset();
-        showManageUsersModal(); // Refresh the member list
+        showManageUsersModal();
     } else {
         showError(response?.message || 'เกิดข้อผิดพลาด');
     }
@@ -300,14 +271,13 @@ async function handleDeleteMember(memberNameToDelete) {
         Swal.close();
         if (response?.status === 'success') {
             showSuccess(response.message);
-            showManageUsersModal(); // Refresh the list
+            showManageUsersModal();
         } else {
             showError(response.message);
         }
     }
 }
 
-// --- 7. UTILITY & THEME FUNCTIONS ---
 function populateTimeDropdown() {
     const timeSelect = document.getElementById('task-time');
     timeSelect.innerHTML = '';
@@ -317,18 +287,20 @@ function populateTimeDropdown() {
     }
 }
 
-function getTaskCardClass(dateString) {
-    if (!dateString) return '';
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-    const taskDate = new Date(dateString);
-    taskDate.setHours(0, 0, 0, 0);
-    const tomorrow = new Date(today);
-    tomorrow.setDate(today.getDate() + 1);
-    if (taskDate < today) return 'task-card-overdue';
-    if (taskDate.getTime() === today.getTime()) return 'task-card-today';
-    if (taskDate.getTime() === tomorrow.getTime()) return 'task-card-warning';
-    return '';
+function getTaskCardClass(thaiDateString) {
+    if (!thaiDateString) return '';
+    try {
+        const parts = thaiDateString.split('/');
+        const taskDate = new Date(parseInt(parts[2]) - 543, parseInt(parts[1]) - 1, parseInt(parts[0]));
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+        const tomorrow = new Date(today);
+        tomorrow.setDate(today.getDate() + 1);
+        if (taskDate < today) return 'task-card-overdue';
+        if (taskDate.getTime() === today.getTime()) return 'task-card-today';
+        if (taskDate.getTime() === tomorrow.getTime()) return 'task-card-warning';
+        return '';
+    } catch (e) { return ''; }
 }
 
 function handleThemeChange(themeClass) {
