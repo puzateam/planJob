@@ -3,7 +3,7 @@
 // ===============================================================
 
 // !!! สำคัญ: แก้ไข URL นี้เป็น Web App URL ของคุณ !!!
-const API_URL = 'https://script.google.com/macros/s/AKfycbx1K5nqqUOiXBkn_fJpl0emv7810veZJB0fvISaMJAq7xDoWKrrw_aqQFwGaaUBse0L6w/exec';
+const API_URL = 'https://script.google.com/macros/s/AKfycbzdMsyel5LsNiVmTpKj60CJC_ll-PqhFTOqp4xkaaxNgF1my6mBqQmrJ53K09gFrzIt/exec';
 
 // --- 1. STATE MANAGEMENT (Updated for Team Model) ---
 const AppState = {
