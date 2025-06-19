@@ -3,57 +3,60 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>PlanJob - ตารางงาน</title>
-    <!-- Google Fonts -->
+    <title>Planjob - ตารางงาน</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@400;700;900&display=swap" rel="stylesheet">
-    <!-- Bootstrap CSS -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
-    <!-- Bootstrap Icons -->
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
-    <!-- Custom CSS -->
     <link rel="stylesheet" href="style.css">
-    <!-- PWA Manifest -->
     <link rel="manifest" href="manifest.json">
-    <meta name="theme-color" content="#4CAF50"/>
+    <meta name="theme-color" content="#198754"/>
 </head>
-<body>
+<body class="theme-green">
 
-    <div id="app-container">
-        <header class="bg-primary text-white shadow-sm p-3 d-flex justify-content-between align-items-center sticky-top">
-            <!-- Left Side: App Title with Icon -->
-            <h1 class="h5 mb-0 d-flex align-items-center">
-                <img src="https://raw.githubusercontent.com/puzateam/planJob/main/icons/icon-192x192.png" alt="Planjob Icon" class="header-icon me-2">
-                ปฏิทินงาน
-            </h1>
-            
-            <!-- Center: User Filter Dropdown -->
-            <div id="user-filter-section">
-                <select id="user-filter-dropdown" class="form-select form-select-sm">
-                    <option value="" selected disabled>--- เลือกผู้ใช้ ---</option>
-                </select>
+    <div id="login-view" class="container-fluid d-flex vh-100 justify-content-center align-items-center">
+        <div class="login-box card p-4 shadow-sm">
+            <div class="card-body text-center">
+                <img src="https://raw.githubusercontent.com/puzateam/planJob/main/icons/icon-192x192.png" alt="Icon" width="80" class="mb-3">
+                <h1 class="card-title mb-2">Planjob</h1>
+                <p class="card-subtitle mb-4 text-muted">เข้าสู่ระบบเพื่อดูตารางงานทีม</p>
+                <form id="login-form">
+                    <div class="form-floating mb-3">
+                        <input type="text" class="form-control" id="team-username" placeholder="ชื่อทีม" required>
+                        <label for="team-username">ชื่อทีม</label>
+                    </div>
+                    <div class="form-floating mb-3">
+                        <input type="password" class="form-control" id="member-password" placeholder="รหัสผ่านส่วนตัว" required>
+                        <label for="member-password">รหัสผ่าน</label>
+                    </div>
+                    <button type="submit" class="btn btn-primary w-100 py-2">เข้าสู่ระบบ</button>
+                </form>
             </div>
-            
-            <!-- Right Side: Login Button (Only for logged-out state) -->
-            <button id="login-btn" class="btn btn-light btn-sm">เข้าสู่ระบบ</button>
+        </div>
+    </div>
+
+    <div id="app-view" class="d-none">
+        <header class="bg-primary text-white shadow-sm p-3 d-flex justify-content-between align-items-center sticky-top">
+            <h1 class="h5 mb-0 d-flex align-items-center">
+                <img src="https://raw.githubusercontent.com/puzateam/planJob/main/icons/icon-192x192.png" alt="Icon" class="header-icon me-2">
+                <span id="header-team-name"></span>
+            </h1>
+            <div class="d-flex align-items-center">
+                <span id="header-member-name" class="me-3"></span>
+                <button id="logout-btn" class="btn btn-danger btn-sm"><i class="bi bi-box-arrow-right"></i> ออกจากระบบ</button>
+            </div>
         </header>
         
-        <!-- User Status Bar -->
-        <div id="status-bar" class="container-fluid bg-light py-2 d-none">
-            <div class="container d-flex justify-content-between align-items-center">
-                <!-- Manage Users Button (for Admin) -->
-                <button id="manage-users-btn" class="btn btn-primary btn-sm d-none">
-                    <i class="bi bi-people-fill"></i>AddUser
-                </button>
-                
-                <!-- Status Text -->
-                <span id="status-bar-text" class="fw-bold text-muted mx-auto"></span>
-
-                <!-- Logout Button -->
-                <button id="logout-btn" class="btn btn-danger btn-sm">
-                    <i class="bi bi-box-arrow-right"></i>LogOut
-                </button>
+        <div id="controls-bar" class="container-fluid bg-light py-2 border-bottom">
+            <div class="container d-flex justify-content-end align-items-center gap-2">
+                <div id="theme-switcher" class="d-none me-auto">
+                    <span>ธีมสี:</span>
+                    <button class="btn theme-btn theme-green" data-theme="theme-green" title="เขียว"></button>
+                    <button class="btn theme-btn theme-blue" data-theme="theme-blue" title="น้ำเงิน"></button>
+                    <button class="btn theme-btn theme-purple" data-theme="theme-purple" title="ม่วง"></button>
+                </div>
+                <button id="manage-users-btn" class="btn btn-secondary btn-sm d-none"><i class="bi bi-people-fill"></i> จัดการสมาชิก</button>
             </div>
         </div>
 
