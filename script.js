@@ -1,5 +1,5 @@
 // ===============================================================
-// Planjob Frontend - v3.1 (Role & UI Revamp)
+// Planjob Frontend - v3.2 (Bug Fixes for Authentication & UI)
 // ===============================================================
 
 // !!! สำคัญ: แก้ไข URL นี้เป็น Web App URL ของคุณ !!!
@@ -7,7 +7,6 @@ const API_URL = 'https://script.google.com/macros/s/AKfycbzdMsyel5LsNiVmTpKj60CJ
 
 // --- 1. STATE & DOM ELEMENTS ---
 const AppState = { currentTeam: null, currentMember: null, currentRole: null, isLoggedIn: false, teamMembers: [], currentTasks: [], editingTaskId: null };
-
 const loginView = document.getElementById('login-view');
 const appView = document.getElementById('app-view');
 const loginForm = document.getElementById('login-form');
@@ -162,7 +161,6 @@ function renderTasks(tasks) {
 
 // --- 5. TASK HANDLERS & API CALLS ---
 async function fetchTasks() {
-    // ** FIX **: Ensure auth object is passed correctly
     const authData = { team: AppState.currentTeam, member_name: AppState.currentMember, role: AppState.currentRole };
     const response = await fetchAPI('POST', { action: 'getTasks', auth: authData });
     Swal.close();
@@ -203,9 +201,13 @@ async function handleSaveTask(event) {
     if (AppState.editingTaskId) {
         action = 'updateTask';
         payload.taskId = AppState.editingTaskId;
+    } else {
+        // ** FIX **: Add team and creator to payload for new tasks
+        payload.team = AppState.currentTeam;
+        payload.creator = AppState.currentMember;
     }
     showLoader('กำลังบันทึก...');
-    // ** FIX **: Ensure auth object is passed correctly
+    // ** FIX **: Pass the auth object with the request
     const authData = { team: AppState.currentTeam, member_name: AppState.currentMember, role: AppState.currentRole };
     const response = await fetchAPI('POST', { action, auth: authData, payload });
     Swal.close();
@@ -237,7 +239,7 @@ async function handleDeleteTask(taskId) {
 // --- 6. MEMBER MANAGEMENT HANDLERS ---
 async function showManageUsersModal() {
     showLoader('กำลังโหลดรายชื่อสมาชิก...');
-    // ** FIX **: Ensure auth object is passed correctly
+    // ** FIX **: Pass the auth object with the request
     const authData = { team: AppState.currentTeam, member_name: AppState.currentMember, role: AppState.currentRole };
     const response = await fetchAPI('POST', { action: 'getMembers', auth: authData });
     Swal.close();
@@ -257,11 +259,8 @@ function populateUserManagementModal() {
             <tbody>
                 ${AppState.teamMembers.map(member => {
                     const isSelf = member.member_name === AppState.currentMember;
-                    // Director cannot delete another director or themselves
                     const canDelete = !isSelf && member.role !== 'director';
-                    const actionButtonHtml = canDelete
-                        ? `<button class="btn btn-sm btn-danger" onclick="handleDeleteMember('${member.member_name}')">ลบ</button>`
-                        : '';
+                    const actionButtonHtml = canDelete ? `<button class="btn btn-sm btn-danger" onclick="handleDeleteMember('${member.member_name}')">ลบ</button>` : '';
                     return `<tr>
                         <td>${member.member_name} ${isSelf ? '(คุณ)' : ''}</td>
                         <td><span class="badge bg-secondary">${member.role}</span></td>
@@ -275,9 +274,9 @@ function populateUserManagementModal() {
 async function handleAddMember(event) {
     event.preventDefault();
     const payload = {
-        newMemberPassword: document.getElementById('new-password').value,
-        newMemberName: document.getElementById('new-username').value,
-        newMemberRole: document.getElementById('new-role').value,
+        newMemberPassword: document.getElementById('new-member-password').value,
+        newMemberName: document.getElementById('new-member-name').value,
+        newMemberRole: document.getElementById('new-member-role').value,
     };
     showLoader('กำลังเพิ่มสมาชิก...');
     const authData = { team: AppState.currentTeam, member_name: AppState.currentMember, role: AppState.currentRole };
@@ -347,11 +346,7 @@ async function fetchAPI(method, body = null) {
     try {
         let url = API_URL;
         const options = { method: 'POST', redirect: 'follow', muteHttpExceptions: true, headers: { 'Content-Type': 'text/plain;charset=utf-8' } };
-        if (method.startsWith('GET')) {
-            url += method.substring(3);
-            const res = await fetch(url);
-            return await res.json();
-        } else { options.body = JSON.stringify(body); }
+        options.body = JSON.stringify(body);
         const response = await fetch(url, options);
         return await response.json();
     } catch (error) {
