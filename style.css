@@ -1,3 +1,21 @@
+body { transition: background-color 0.3s; }
+/* Theme Definitions */
+body.theme-green { --bs-primary: #198754; --bs-primary-rgb: 25, 135, 84; }
+body.theme-blue { --bs-primary: #0d6efd; --bs-primary-rgb: 13, 110, 253; }
+body.theme-purple { --bs-primary: #6f42c1; --bs-primary-rgb: 111, 66, 193; }
+
+/* Dynamic color application */
+.bg-primary { background-color: var(--bs-primary) !important; }
+.btn-primary { background-color: var(--bs-primary); border-color: var(--bs-primary); }
+.btn-primary:hover { filter: brightness(90%); }
+.task-card { border-left-color: var(--bs-primary) !important; }
+
+/* Layout */
+#login-view { background-color: #f0f2f5; }
+.login-box { max-width: 400px; width: 100%; }
+.header-icon { width: 1.5em; height: 1.5em; }
+#controls-bar { min-height: 52px; }
+
 :root {
     --bs-primary: #4CAF50;
     --bs-primary-rgb: 76, 175, 80;
