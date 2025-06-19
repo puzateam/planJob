@@ -141,7 +141,7 @@ function renderTasks(tasks) {
                         <div class="text-end">
                             <strong class="d-block">${task.taskName}</strong>
                             <span class="text-muted">${task.location || ''}</span>
-                            <small class="d-block text-info">ผู้ดำเนินการ: ${task.operator || 'N/A'}</small>
+                            <small class="d-block text-danger">ผู้ดำเนินการ: ${task.operator || 'N/A'}</small>
                         </div>
                     </div>
                 </div>
