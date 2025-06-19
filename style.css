@@ -56,16 +56,19 @@ header #user-filter-section {
     font-size: 0.8rem;
 }
 
-/* ** UPDATED **: Card Status Colors (Darker shades) */
+/* ** UPDATED **: Card Status Colors (Even Darker/More Vibrant) */
 .task-card-today {
-    border-left-color: #146c43; /* Bootstrap Success Dark */
-    background-color: #d1e7dd; /* Bootstrap Success Lighter Background */
+    /* เปลี่ยนจากเขียวเป็นแดงเข้มตามคำขอ */
+    border-left-color: #b02a37; /* Bootstrap Danger Dark */
+    background-color: #f8d7da; /* Bootstrap Danger Lighter Background */
 }
 .task-card-warning {
+    /* สีแสด/เหลืองที่เข้มขึ้น */
     border-left-color: #d39e00; /* Bootstrap Warning Dark */
     background-color: #fff3cd; /* Bootstrap Warning Lighter Background */
 }
 .task-card-overdue {
+    /* สีเทาที่เข้มขึ้น */
     border-left-color: #495057; /* Bootstrap Secondary Dark */
     background-color: #e9ecef; /* Bootstrap Secondary Lighter Background */
 }
