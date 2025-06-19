@@ -1,7 +1,6 @@
 // ===============================================================
-// Planjob Frontend - v3.3 (Final Fixes for Date & Auth)
+// Planjob Frontend - v3.4 (Final Fixes)
 // ===============================================================
-
 const API_URL = 'https://script.google.com/macros/s/AKfycbzdMsyel5LsNiVmTpKj60CJC_ll-PqhFTOqp4xkaaxNgF1my6mBqQmrJ53K09gFrzIt/exec';
 
 const AppState = { currentTeam: null, currentMember: null, currentRole: null, isLoggedIn: false, teamMembers: [], currentTasks: [], editingTaskId: null };
@@ -36,9 +35,10 @@ document.querySelectorAll('#theme-switcher .theme-btn').forEach(btn => {
 });
 
 function initializeApp() {
-    const savedTheme = localStorage.getItem('taskAppTheme') || 'theme-green';
+    checkLoginState(); // Check first
+    const savedTheme = localStorage.getItem(`taskAppTheme_${AppState.currentTeam}`) || 'theme-green';
     applyTheme(savedTheme);
-    checkLoginState();
+
     if (AppState.isLoggedIn) {
         showLoader(`กำลังโหลดข้อมูลทีม ${AppState.currentTeam}...`);
         updateUI();
@@ -71,6 +71,7 @@ async function handleLogin(event) {
         localStorage.setItem('taskAppTeam', response.team);
         localStorage.setItem('taskAppMember', response.member_name);
         localStorage.setItem('taskAppRole', response.role);
+        localStorage.setItem(`taskAppTheme_${response.team}`, response.theme);
         initializeApp();
     } else {
         showError(response?.message || 'ข้อมูลไม่ถูกต้อง');
@@ -128,7 +129,7 @@ function renderTasks(tasks) {
                         <div class="text-end">
                             <strong class="d-block">${task.taskName}</strong>
                             <span class="text-muted">${task.location || ''}</span>
-                            <small class="d-block text-info">สร้างโดย: ${task.creator || 'N/A'}</small>
+                            <small class="d-block text-info">ผู้ดำเนินการ: ${task.operator || 'N/A'}</small>
                         </div>
                     </div>
                 </div>
@@ -158,11 +159,12 @@ function handleEditTask(taskId) {
         AppState.editingTaskId = taskId;
         taskModalTitle.textContent = 'แก้ไขงาน';
         const dateParts = taskToEdit.date.split('/');
-        const isoDate = `${parseInt(dateParts[2]) - 543}-${dateParts[1]}-${dateParts[0]}`;
+        const isoDate = `${parseInt(dateParts[2]) - 543}-${dateParts[1].padStart(2, '0')}-${dateParts[0].padStart(2, '0')}`;
         taskForm['task-date'].value = isoDate;
         taskForm['task-time'].value = taskToEdit.time;
         taskForm['task-name'].value = taskToEdit.taskName;
         taskForm['task-location'].value = taskToEdit.location;
+        taskForm['task-operator'].value = taskToEdit.operator;
         taskModal.show();
     }
 }
@@ -174,6 +176,7 @@ async function handleSaveTask(event) {
         time: document.getElementById('task-time').value,
         taskName: taskForm['task-name'].value,
         location: taskForm['task-location'].value,
+        operator: document.getElementById('task-operator').value,
     };
     let action = 'addTask';
     if (AppState.editingTaskId) {
@@ -305,7 +308,19 @@ function getTaskCardClass(thaiDateString) {
 
 function handleThemeChange(themeClass) {
     applyTheme(themeClass);
-    localStorage.setItem('taskAppTheme', themeClass);
+    showLoader('กำลังบันทึกธีม...');
+    const authData = { team: AppState.currentTeam, member_name: AppState.currentMember, role: AppState.currentRole };
+    const response = fetchAPI('POST', { action: 'updateTeamTheme', auth: authData, payload: { theme: themeClass } });
+    Swal.close();
+    response.then(res => {
+        if(res.status === 'success') {
+            localStorage.setItem(`taskAppTheme_${AppState.currentTeam}`, themeClass);
+        } else {
+            showError('ไม่สามารถบันทึกธีมได้');
+            const oldTheme = localStorage.getItem(`taskAppTheme_${AppState.currentTeam}`) || 'theme-green';
+            applyTheme(oldTheme);
+        }
+    });
 }
 
 function applyTheme(themeClass) {
