@@ -3,7 +3,7 @@
 // ===============================================================
 
 // !!! สำคัญ: แก้ไข URL นี้เป็น Web App URL ของคุณ !!!
-const API_URL = 'YOUR_WEB_APP_URL_HERE';
+const API_URL = 'https://script.google.com/macros/s/AKfycbzdMsyel5LsNiVmTpKj60CJC_ll-PqhFTOqp4xkaaxNgF1my6mBqQmrJ53K09gFrzIt/exec';
 
 // --- 1. STATE & DOM ELEMENTS ---
 const AppState = { currentTeam: null, currentMember: null, currentRole: null, isLoggedIn: false, teamMembers: [], currentTasks: [], editingTaskId: null };
