@@ -1,5 +1,5 @@
 // ===============================================================
-// Planjob Frontend - v3.0 (Role & UI Revamp)
+// Planjob Frontend - v3.1 (Role & UI Revamp)
 // ===============================================================
 
 // !!! สำคัญ: แก้ไข URL นี้เป็น Web App URL ของคุณ !!!
@@ -162,7 +162,9 @@ function renderTasks(tasks) {
 
 // --- 5. TASK HANDLERS & API CALLS ---
 async function fetchTasks() {
-    const response = await fetchAPI('POST', { action: 'getTasks', auth: AppState });
+    // ** FIX **: Ensure auth object is passed correctly
+    const authData = { team: AppState.currentTeam, member_name: AppState.currentMember, role: AppState.currentRole };
+    const response = await fetchAPI('POST', { action: 'getTasks', auth: authData });
     Swal.close();
     AppState.currentTasks = response?.status === 'success' ? response.data : [];
     renderTasks(AppState.currentTasks);
@@ -201,12 +203,11 @@ async function handleSaveTask(event) {
     if (AppState.editingTaskId) {
         action = 'updateTask';
         payload.taskId = AppState.editingTaskId;
-    } else {
-        // For new tasks, the team comes from the logged-in state
-        payload.team = AppState.currentTeam;
     }
     showLoader('กำลังบันทึก...');
-    const response = await fetchAPI('POST', { action, auth: AppState, payload });
+    // ** FIX **: Ensure auth object is passed correctly
+    const authData = { team: AppState.currentTeam, member_name: AppState.currentMember, role: AppState.currentRole };
+    const response = await fetchAPI('POST', { action, auth: authData, payload });
     Swal.close();
     if (response?.status === 'success') {
         taskModal.hide();
@@ -221,7 +222,8 @@ async function handleDeleteTask(taskId) {
     const result = await Swal.fire({ title: 'ยืนยันการลบ?', text: "คุณจะไม่สามารถกู้คืนข้อมูลนี้ได้!", icon: 'warning', showCancelButton: true, confirmButtonText: 'ใช่, ลบเลย!', cancelButtonText: 'ยกเลิก' });
     if (result.isConfirmed) {
         showLoader('กำลังลบ...');
-        const response = await fetchAPI('POST', { action: 'deleteTask', auth: AppState, payload: { taskId } });
+        const authData = { team: AppState.currentTeam, member_name: AppState.currentMember, role: AppState.currentRole };
+        const response = await fetchAPI('POST', { action: 'deleteTask', auth: authData, payload: { taskId } });
         Swal.close();
         if (response?.status === 'success') {
             showSuccess('ลบข้อมูลสำเร็จ');
@@ -232,10 +234,12 @@ async function handleDeleteTask(taskId) {
     }
 }
 
-// --- 6. MEMBER MANAGEMENT HANDLERS (for Director) ---
+// --- 6. MEMBER MANAGEMENT HANDLERS ---
 async function showManageUsersModal() {
     showLoader('กำลังโหลดรายชื่อสมาชิก...');
-    const response = await fetchAPI('POST', { action: 'getMembers', auth: AppState });
+    // ** FIX **: Ensure auth object is passed correctly
+    const authData = { team: AppState.currentTeam, member_name: AppState.currentMember, role: AppState.currentRole };
+    const response = await fetchAPI('POST', { action: 'getMembers', auth: authData });
     Swal.close();
     if (response?.status === 'success') {
         AppState.teamMembers = response.data;
@@ -253,7 +257,9 @@ function populateUserManagementModal() {
             <tbody>
                 ${AppState.teamMembers.map(member => {
                     const isSelf = member.member_name === AppState.currentMember;
-                    const actionButtonHtml = !isSelf
+                    // Director cannot delete another director or themselves
+                    const canDelete = !isSelf && member.role !== 'director';
+                    const actionButtonHtml = canDelete
                         ? `<button class="btn btn-sm btn-danger" onclick="handleDeleteMember('${member.member_name}')">ลบ</button>`
                         : '';
                     return `<tr>
@@ -274,7 +280,8 @@ async function handleAddMember(event) {
         newMemberRole: document.getElementById('new-role').value,
     };
     showLoader('กำลังเพิ่มสมาชิก...');
-    const response = await fetchAPI('POST', { action: 'addMember', auth: AppState, payload });
+    const authData = { team: AppState.currentTeam, member_name: AppState.currentMember, role: AppState.currentRole };
+    const response = await fetchAPI('POST', { action: 'addMember', auth: authData, payload });
     Swal.close();
     if (response?.status === 'success') {
         showSuccess(response.message);
@@ -289,7 +296,8 @@ async function handleDeleteMember(memberNameToDelete) {
     const result = await Swal.fire({ title: `ยืนยันการลบสมาชิก ${memberNameToDelete}?`, icon: 'warning', showCancelButton: true, confirmButtonText: 'ใช่, ลบ', cancelButtonText: 'ยกเลิก' });
     if (result.isConfirmed) {
         showLoader('กำลังลบ...');
-        const response = await fetchAPI('POST', { action: 'deleteMember', auth: AppState, payload: { memberNameToDelete } });
+        const authData = { team: AppState.currentTeam, member_name: AppState.currentMember, role: AppState.currentRole };
+        const response = await fetchAPI('POST', { action: 'deleteMember', auth: authData, payload: { memberNameToDelete } });
         Swal.close();
         if (response?.status === 'success') {
             showSuccess(response.message);
@@ -325,14 +333,12 @@ function getTaskCardClass(dateString) {
 }
 
 function handleThemeChange(themeClass) {
-    document.body.className = themeClass;
-    localStorage.setItem('taskAppTheme', themeClass);
     applyTheme(themeClass);
+    localStorage.setItem('taskAppTheme', themeClass);
 }
 
 function applyTheme(themeClass) {
     document.body.className = themeClass;
-    // Update PWA theme color meta tag to match the new theme
     const newThemeColor = getComputedStyle(document.body).getPropertyValue('--bs-primary').trim();
     document.querySelector('meta[name="theme-color"]').setAttribute('content', newThemeColor);
 }
@@ -358,7 +364,6 @@ function showLoader(title = 'กำลังโหลด...') { Swal.fire({ titl
 function showSuccess(title) { Swal.fire({ icon: 'success', title, showConfirmButton: false, timer: 1500 }); }
 function showError(text) { Swal.fire({ icon: 'error', title: 'ผิดพลาด!', text }); }
 
-// PWA Service Worker Registration
 if ('serviceWorker' in navigator) {
     window.addEventListener('load', () => {
         navigator.serviceWorker.register('./service-worker.js').then(reg => console.log('Service Worker: Registered')).catch(err => console.log(`Service Worker: Error: ${err}`));
