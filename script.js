@@ -1,143 +1,133 @@
 // ===============================================================
-// Planjob Frontend - v2.0 (Team Model - Phase 2 Logic)
+// Planjob Frontend - v3.0 (Role & UI Revamp)
 // ===============================================================
 
 // !!! สำคัญ: แก้ไข URL นี้เป็น Web App URL ของคุณ !!!
-const API_URL = 'https://script.google.com/macros/s/AKfycbzdMsyel5LsNiVmTpKj60CJC_ll-PqhFTOqp4xkaaxNgF1my6mBqQmrJ53K09gFrzIt/exec';
+const API_URL = 'YOUR_WEB_APP_URL_HERE';
 
-// --- 1. STATE MANAGEMENT (Updated for Team Model) ---
-const AppState = {
-    currentTeam: null,
-    currentMember: null,
-    currentRole: null,
-    isLoggedIn: false,
-    allTeams: [],
-    currentTasks: [],
-    editingTaskId: null
-};
+// --- 1. STATE & DOM ELEMENTS ---
+const AppState = { currentTeam: null, currentMember: null, currentRole: null, isLoggedIn: false, teamMembers: [], currentTasks: [], editingTaskId: null };
 
-// --- 2. DOM ELEMENTS ---
-const teamFilterDropdown = document.getElementById('user-filter-dropdown'); // Will be repurposed for teams
-const statusBar = document.getElementById('status-bar');
-const statusBarText = document.getElementById('status-bar-text');
-const loginBtn = document.getElementById('login-btn');
-const manageUsersBtn = document.getElementById('manage-users-btn');
+const loginView = document.getElementById('login-view');
+const appView = document.getElementById('app-view');
+const loginForm = document.getElementById('login-form');
+const headerTeamName = document.getElementById('header-team-name');
+const headerMemberName = document.getElementById('header-member-name');
 const logoutBtn = document.getElementById('logout-btn');
+const controlsBar = document.getElementById('controls-bar');
+const themeSwitcher = document.getElementById('theme-switcher');
+const manageUsersBtn = document.getElementById('manage-users-btn');
 const taskList = document.getElementById('task-list');
 const fabFooter = document.getElementById('fab-footer');
 const addTaskBtn = document.getElementById('add-task-btn');
 const taskForm = document.getElementById('task-form');
 const taskDateInput = document.getElementById('task-date');
 const taskModalTitle = document.getElementById('task-modal-title-label');
+const addUserForm = document.getElementById('add-user-form');
 // Modals
 const taskModal = new bootstrap.Modal(document.getElementById('task-modal'));
 const manageUsersModal = new bootstrap.Modal(document.getElementById('manage-users-modal'));
 
-
-// --- 3. EVENT LISTENERS ---
+// --- 2. EVENT LISTENERS ---
 document.addEventListener('DOMContentLoaded', initializeApp);
-teamFilterDropdown.addEventListener('change', (e) => {
-    if (e.target.value) { fetchTasks(e.target.value); }
-});
-loginBtn.addEventListener('click', handleLogin);
+loginForm.addEventListener('submit', handleLogin);
 logoutBtn.addEventListener('click', handleLogout);
-addTaskBtn.addEventListener('click', () => {
-    AppState.editingTaskId = null;
-    taskModalTitle.textContent = 'เพิ่มงานใหม่';
-    taskForm.reset();
-    taskDateInput.value = new Date().toISOString().split('T')[0];
-    taskModal.show();
-});
-manageUsersBtn.addEventListener('click', () => { /* Logic to be added in Phase 3 */ });
+addTaskBtn.addEventListener('click', showAddTaskModal);
+manageUsersBtn.addEventListener('click', showManageUsersModal);
 taskForm.addEventListener('submit', handleSaveTask);
-document.getElementById('add-user-form').addEventListener('submit', () => { /* Logic to be added in Phase 3 */ });
+addUserForm.addEventListener('submit', handleAddMember);
+document.querySelectorAll('#theme-switcher .theme-btn').forEach(btn => {
+    btn.addEventListener('click', (e) => handleThemeChange(e.target.dataset.theme));
+});
 
-// --- 4. INITIALIZATION ---
-async function initializeApp() {
-    showLoader('กำลังเริ่มต้นระบบ...');
-    checkLoginState(); // ** UPDATED **
-    populateTimeDropdown();
-    await fetchAndPopulateTeams(); // ** UPDATED **
-    taskList.innerHTML = '<p class="text-center text-muted mt-5">กรุณาเลือกทีมจากเมนูด้านบนเพื่อดูตารางงาน</p>';
+// --- 3. INITIALIZATION & CORE WORKFLOW ---
+function initializeApp() {
+    const savedTheme = localStorage.getItem('taskAppTheme') || 'theme-green';
+    applyTheme(savedTheme);
+
+    checkLoginState();
     if (AppState.isLoggedIn) {
-        teamFilterDropdown.value = AppState.currentTeam;
-        if(teamFilterDropdown.value) await fetchTasks(AppState.currentTeam);
-    }
-    updateUI();
-    Swal.close();
-}
-
-// --- 5. CORE LOGIC (Updated for Team Model) ---
-
-function populateTimeDropdown() {
-    const timeSelect = document.getElementById('task-time');
-    timeSelect.innerHTML = '';
-    for (let hour = 6; hour <= 18; hour++) {
-        const timeString = hour.toString().padStart(2, '0') + ':00';
-        timeSelect.innerHTML += `<option value="${timeString}">${timeString} น.</option>`;
+        showLoader(`กำลังโหลดข้อมูลทีม ${AppState.currentTeam}...`);
+        updateUI();
+        populateTimeDropdown();
+        fetchTasks();
+    } else {
+        updateUI();
     }
 }
 
-/**
- * Checks for a logged-in session in localStorage.
- */
 function checkLoginState() {
     const team = localStorage.getItem('taskAppTeam');
     const member = localStorage.getItem('taskAppMember');
     const role = localStorage.getItem('taskAppRole');
     if (team && member && role) {
         Object.assign(AppState, { currentTeam: team, currentMember: member, currentRole: role, isLoggedIn: true });
+    } else {
+        Object.assign(AppState, { currentTeam: null, currentMember: null, currentRole: null, isLoggedIn: false });
     }
 }
 
-/**
- * Fetches the list of unique teams and populates the dropdown.
- */
-async function fetchAndPopulateTeams() {
-    const response = await fetchAPI('POST', { action: 'getTeams' });
-    if (response?.status === 'success') {
-        AppState.allTeams = response.data;
-        const currentSelection = teamFilterDropdown.value;
-        teamFilterDropdown.innerHTML = '<option value="" selected disabled>--- เลือกทีม ---</option>';
-        AppState.allTeams.forEach(teamName => {
-            if (teamName) { teamFilterDropdown.innerHTML += `<option value="${teamName}">${teamName}</option>`; }
-        });
-        teamFilterDropdown.value = currentSelection;
-    }
-}
-
-/**
- * Fetches tasks for a specific team.
- * @param {string} team - The name of the team to fetch tasks for.
- */
-async function fetchTasks(team) {
-    if (!team) return;
-    showLoader('กำลังโหลดข้อมูลงาน...');
-    const response = await fetchAPI(`GET?team=${team}`);
+async function handleLogin(event) {
+    event.preventDefault();
+    showLoader('กำลังเข้าสู่ระบบ...');
+    const team_username = document.getElementById('team-username').value;
+    const member_password = document.getElementById('member-password').value;
+    const response = await fetchAPI('POST', { action: 'login', team_username, member_password });
     Swal.close();
-    AppState.currentTasks = response?.status === 'success' ? response.data : [];
-    renderTasks(AppState.currentTasks);
+    if (response?.status === 'success') {
+        localStorage.setItem('taskAppTeam', response.team);
+        localStorage.setItem('taskAppMember', response.member_name);
+        localStorage.setItem('taskAppRole', response.role);
+        initializeApp();
+    } else {
+        showError(response?.message || 'ข้อมูลไม่ถูกต้อง');
+    }
 }
 
-/**
- * Renders the list of tasks to the page.
- */
+function handleLogout() {
+    localStorage.removeItem('taskAppTeam');
+    localStorage.removeItem('taskAppMember');
+    localStorage.removeItem('taskAppRole');
+    window.location.reload();
+}
+
+// --- 4. UI & DATA RENDERING ---
+function updateUI() {
+    if (AppState.isLoggedIn) {
+        loginView.classList.add('d-none');
+        appView.classList.remove('d-none');
+        
+        headerTeamName.textContent = `ทีม: ${AppState.currentTeam}`;
+        headerMemberName.textContent = `(${AppState.currentMember})`;
+
+        const canManageTasks = AppState.currentRole === 'director' || AppState.currentRole === 'officer';
+        const canManageMembers = AppState.currentRole === 'director';
+
+        fabFooter.classList.toggle('d-none', !canManageTasks);
+        manageUsersBtn.classList.toggle('d-none', !canManageMembers);
+        themeSwitcher.classList.toggle('d-none', !canManageMembers);
+
+    } else {
+        loginView.classList.remove('d-none');
+        appView.classList.add('d-none');
+    }
+}
+
 function renderTasks(tasks) {
-    if (tasks.length === 0) {
-        taskList.innerHTML = '<p class="text-center text-muted mt-5">ไม่พบข้อมูลงานสำหรับทีมนี้</p>';
+    if (!tasks || tasks.length === 0) {
+        taskList.innerHTML = '<p class="text-center text-muted mt-5">ไม่พบข้อมูลงาน</p>';
         return;
     }
     taskList.innerHTML = tasks.map(task => {
-        const canManage = AppState.isLoggedIn && (
-            AppState.currentRole === 'admin' || 
-            AppState.currentRole === 'owner' || 
-            AppState.currentMember === task.creator
-        );
-        const actionsHtml = canManage ?
-            `<div class="task-actions">
-                <button class="btn btn-sm btn-outline-warning" onclick="handleEditTask('${task.taskId}')" title="แก้ไขงาน"><i class="bi bi-pencil-square"></i></button>
-                <button class="btn btn-sm btn-outline-danger" onclick="handleDeleteTask('${task.taskId}')" title="ลบงาน"><i class="bi bi-trash"></i></button>
-            </div>` : '';
+        const canEdit = AppState.isLoggedIn && (AppState.currentRole === 'director' || (AppState.currentRole === 'officer' && AppState.currentMember === task.creator));
+        const canDelete = canEdit;
+
+        let actionsHtml = '';
+        if (canEdit || canDelete) {
+            const editBtn = canEdit ? `<button class="btn btn-sm btn-outline-warning" onclick="handleEditTask('${task.taskId}')" title="แก้ไขงาน"><i class="bi bi-pencil-square"></i></button>` : '';
+            const deleteBtn = canDelete ? `<button class="btn btn-sm btn-outline-danger" onclick="handleDeleteTask('${task.taskId}')" title="ลบงาน"><i class="bi bi-trash"></i></button>` : '';
+            actionsHtml = `<div class="task-actions">${editBtn}${deleteBtn}</div>`;
+        }
         
         const formattedDate = (dateString) => {
             if (!dateString || !dateString.includes('-')) return dateString;
@@ -170,73 +160,22 @@ function renderTasks(tasks) {
     }).join('');
 }
 
-/**
- * Updates the UI based on the current login state.
- */
-function updateUI() {
-    const loggedIn = AppState.isLoggedIn;
-    loginBtn.classList.toggle('d-none', loggedIn);
-    teamFilterDropdown.parentElement.style.visibility = loggedIn ? 'hidden' : 'visible';
-    statusBar.classList.toggle('d-none', !loggedIn);
-    fabFooter.classList.toggle('d-none', !loggedIn);
-    
-    if (loggedIn) {
-        statusBarText.textContent = `ทีม: ${AppState.currentTeam} | ผู้ใช้: ${AppState.currentMember}`;
-        manageUsersBtn.classList.toggle('d-none', AppState.currentRole !== 'admin' && AppState.currentRole !== 'owner');
-    }
+// --- 5. TASK HANDLERS & API CALLS ---
+async function fetchTasks() {
+    const response = await fetchAPI('POST', { action: 'getTasks', auth: AppState });
+    Swal.close();
+    AppState.currentTasks = response?.status === 'success' ? response.data : [];
+    renderTasks(AppState.currentTasks);
 }
 
-
-// --- 6. HANDLER FUNCTIONS (Updated for Team Model) ---
-
-/**
- * Handles the login process.
- */
-async function handleLogin() {
-    const { value: formValues } = await Swal.fire({
-        title: 'เข้าสู่ระบบทีม',
-        html: `<input id="swal-input1" class="swal2-input" placeholder="ชื่อทีม" required>
-               <input id="swal-input2" type="password" class="swal2-input" placeholder="รหัสผ่านส่วนตัว" required>`,
-        focusConfirm: false, confirmButtonText: 'เข้าสู่ระบบ', showCancelButton: true, cancelButtonText: 'ยกเลิก',
-        preConfirm: () => {
-            const u = document.getElementById('swal-input1').value;
-            const p = document.getElementById('swal-input2').value;
-            if (!u || !p) Swal.showValidationMessage('กรุณากรอกชื่อทีมและรหัสผ่าน');
-            return [u, p];
-        }
-    });
-    if (formValues) {
-        showLoader('กำลังตรวจสอบ...');
-        const [team_username, member_password] = formValues;
-        const response = await fetchAPI('POST', { action: 'login', team_username, member_password });
-        Swal.close();
-        if (response?.status === 'success') {
-            localStorage.setItem('taskAppTeam', response.team);
-            localStorage.setItem('taskAppMember', response.member_name);
-            localStorage.setItem('taskAppRole', response.role);
-            checkLoginState();
-            updateUI();
-            teamFilterDropdown.value = response.team;
-            if(teamFilterDropdown.value) fetchTasks(response.team);
-        } else {
-            showError(response?.message || 'ข้อมูลไม่ถูกต้อง');
-        }
-    }
+function showAddTaskModal() {
+    AppState.editingTaskId = null;
+    taskModalTitle.textContent = 'เพิ่มงานใหม่';
+    taskForm.reset();
+    taskDateInput.value = new Date().toISOString().split('T')[0];
+    taskModal.show();
 }
 
-/**
- * Handles the logout process.
- */
-function handleLogout() {
-    localStorage.removeItem('taskAppTeam');
-    localStorage.removeItem('taskAppMember');
-    localStorage.removeItem('taskAppRole');
-    window.location.reload();
-}
-
-/**
- * Opens the task modal for editing an existing task.
- */
 function handleEditTask(taskId) {
     const taskToEdit = AppState.currentTasks.find(t => t.taskId === taskId);
     if (taskToEdit) {
@@ -250,9 +189,6 @@ function handleEditTask(taskId) {
     }
 }
 
-/**
- * Handles saving a new or edited task.
- */
 async function handleSaveTask(event) {
     event.preventDefault();
     const payload = {
@@ -261,59 +197,119 @@ async function handleSaveTask(event) {
         taskName: taskForm['task-name'].value,
         location: taskForm['task-location'].value,
     };
-    
-    const authData = { 
-        team: AppState.currentTeam, 
-        member_name: AppState.currentMember, 
-        role: AppState.currentRole 
-    };
-
     let action = 'addTask';
     if (AppState.editingTaskId) {
         action = 'updateTask';
         payload.taskId = AppState.editingTaskId;
     } else {
+        // For new tasks, the team comes from the logged-in state
         payload.team = AppState.currentTeam;
-        payload.creator = AppState.currentMember;
     }
-
     showLoader('กำลังบันทึก...');
-    const response = await fetchAPI('POST', { action, auth: authData, payload });
+    const response = await fetchAPI('POST', { action, auth: AppState, payload });
     Swal.close();
-
     if (response?.status === 'success') {
         taskModal.hide();
         showSuccess('บันทึกสำเร็จ!');
-        fetchTasks(AppState.currentTeam);
+        fetchTasks();
     } else {
         showError(response?.message || 'เกิดข้อผิดพลาด');
     }
 }
 
-/**
- * Handles deleting a task.
- */
 async function handleDeleteTask(taskId) {
     const result = await Swal.fire({ title: 'ยืนยันการลบ?', text: "คุณจะไม่สามารถกู้คืนข้อมูลนี้ได้!", icon: 'warning', showCancelButton: true, confirmButtonText: 'ใช่, ลบเลย!', cancelButtonText: 'ยกเลิก' });
     if (result.isConfirmed) {
         showLoader('กำลังลบ...');
-        const authData = { team: AppState.currentTeam, member_name: AppState.currentMember, role: AppState.currentRole };
-        const response = await fetchAPI('POST', { action: 'deleteTask', auth: authData, payload: { taskId } });
+        const response = await fetchAPI('POST', { action: 'deleteTask', auth: AppState, payload: { taskId } });
         Swal.close();
         if (response?.status === 'success') {
             showSuccess('ลบข้อมูลสำเร็จ');
-            fetchTasks(AppState.currentTeam);
+            fetchTasks();
         } else {
             showError(response?.message || 'เกิดข้อผิดพลาด');
         }
     }
 }
 
-// Placeholder for future implementation
-function populateUserManagementModal() { Swal.fire('Coming soon!', 'ฟังก์ชันจัดการสมาชิกจะถูกเพิ่มในเฟสถัดไป', 'info'); }
-async function handleAddUser(event) { event.preventDefault(); /* Logic to be added in Phase 3 */ }
+// --- 6. MEMBER MANAGEMENT HANDLERS (for Director) ---
+async function showManageUsersModal() {
+    showLoader('กำลังโหลดรายชื่อสมาชิก...');
+    const response = await fetchAPI('POST', { action: 'getMembers', auth: AppState });
+    Swal.close();
+    if (response?.status === 'success') {
+        AppState.teamMembers = response.data;
+        populateUserManagementModal();
+        manageUsersModal.show();
+    } else {
+        showError(response.message || 'ไม่สามารถโหลดข้อมูลสมาชิกได้');
+    }
+}
 
-// --- 7. UTILITY FUNCTIONS ---
+function populateUserManagementModal() {
+    document.getElementById('user-list-table-container').innerHTML = `
+        <table class="table table-striped table-hover align-middle">
+            <thead><tr><th>ชื่อสมาชิก</th><th>บทบาท</th><th class="text-end">Action</th></tr></thead>
+            <tbody>
+                ${AppState.teamMembers.map(member => {
+                    const isSelf = member.member_name === AppState.currentMember;
+                    const actionButtonHtml = !isSelf
+                        ? `<button class="btn btn-sm btn-danger" onclick="handleDeleteMember('${member.member_name}')">ลบ</button>`
+                        : '';
+                    return `<tr>
+                        <td>${member.member_name} ${isSelf ? '(คุณ)' : ''}</td>
+                        <td><span class="badge bg-secondary">${member.role}</span></td>
+                        <td class="text-end">${actionButtonHtml}</td>
+                    </tr>`;
+                }).join('')}
+            </tbody>
+        </table>`;
+}
+
+async function handleAddMember(event) {
+    event.preventDefault();
+    const payload = {
+        newMemberPassword: document.getElementById('new-password').value,
+        newMemberName: document.getElementById('new-username').value,
+        newMemberRole: document.getElementById('new-role').value,
+    };
+    showLoader('กำลังเพิ่มสมาชิก...');
+    const response = await fetchAPI('POST', { action: 'addMember', auth: AppState, payload });
+    Swal.close();
+    if (response?.status === 'success') {
+        showSuccess(response.message);
+        addUserForm.reset();
+        showManageUsersModal(); // Refresh the member list
+    } else {
+        showError(response?.message || 'เกิดข้อผิดพลาด');
+    }
+}
+
+async function handleDeleteMember(memberNameToDelete) {
+    const result = await Swal.fire({ title: `ยืนยันการลบสมาชิก ${memberNameToDelete}?`, icon: 'warning', showCancelButton: true, confirmButtonText: 'ใช่, ลบ', cancelButtonText: 'ยกเลิก' });
+    if (result.isConfirmed) {
+        showLoader('กำลังลบ...');
+        const response = await fetchAPI('POST', { action: 'deleteMember', auth: AppState, payload: { memberNameToDelete } });
+        Swal.close();
+        if (response?.status === 'success') {
+            showSuccess(response.message);
+            showManageUsersModal(); // Refresh the list
+        } else {
+            showError(response.message);
+        }
+    }
+}
+
+// --- 7. UTILITY & THEME FUNCTIONS ---
+function populateTimeDropdown() {
+    const timeSelect = document.getElementById('task-time');
+    timeSelect.innerHTML = '';
+    for (let hour = 6; hour <= 18; hour++) {
+        const timeString = hour.toString().padStart(2, '0') + ':00';
+        timeSelect.innerHTML += `<option value="${timeString}">${timeString} น.</option>`;
+    }
+}
+
 function getTaskCardClass(dateString) {
     if (!dateString) return '';
     const today = new Date();
@@ -326,6 +322,19 @@ function getTaskCardClass(dateString) {
     if (taskDate.getTime() === today.getTime()) return 'task-card-today';
     if (taskDate.getTime() === tomorrow.getTime()) return 'task-card-warning';
     return '';
+}
+
+function handleThemeChange(themeClass) {
+    document.body.className = themeClass;
+    localStorage.setItem('taskAppTheme', themeClass);
+    applyTheme(themeClass);
+}
+
+function applyTheme(themeClass) {
+    document.body.className = themeClass;
+    // Update PWA theme color meta tag to match the new theme
+    const newThemeColor = getComputedStyle(document.body).getPropertyValue('--bs-primary').trim();
+    document.querySelector('meta[name="theme-color"]').setAttribute('content', newThemeColor);
 }
 
 async function fetchAPI(method, body = null) {
